@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.business.dao.BmSalePlanDao">
+	
+	<!-- 영업실적 리스트 조회 -->
+	
+	<select id="bmPlanList" resultType = "kr.happyjob.study.business.model.BmSalePlanModel">
+	/* kr.happyjob.study.business.model.BmSalePlanModel */		
+	SELECT 
+			sp.loginID 
+			,sp.sp_code
+		    ,sp.sp_date
+		    ,bz.biz_name as biz_name
+		    ,pb.pb_name as pb_name
+		    ,ps.ps_name as ps_name
+		    ,pd.prd_name as prd_name
+		    ,sp.sp_gcnt 
+		    ,sp.sp_rcnt 
+		    ,TRUNCATE((sp_rcnt)/(sp_gcnt)*100 ,-1) as sp_rate
+		FROM tb_salplan sp
+			inner join tb_biz bz ON sp.biz_code = bz.biz_code
+		    inner join tb_pb pb ON sp.pb_code = pb.pb_code
+		    inner join tb_ps ps ON sp.pb_code = ps.pb_code and sp.ps_code = ps.ps_code
+		    inner join tb_product pd ON pd.prd_code = sp.prd_code AND pd.pb_code = sp.pb_code AND pd.ps_code = sp.ps_code
+		<where>
+			<if test="(loginID_search != null) and (!loginID_search.equals(''))">
+       			and sp.loginID = #{loginID_search}	
+			</if>
+			<if test="(prolall != null) and (!prolall.equals(''))">
+				and pb.pb_code LIKE CONCAT('%', #{prolall}, '%')
+			</if>
+			<if test="(promall != null) and (!promall.equals(''))">
+				and ps.ps_code LIKE CONCAT('%', #{promall}, '%')
+			</if>
+			<if test="(prodall != null) and (!prodall.equals(''))">
+				and pd.prd_code LIKE CONCAT('%', #{prodall}, '%')
+			</if>
+			<if test="(sp_date != null) and (!sp_date.equals(''))">
+				and sp.sp_date <![CDATA[=]]> #{sp_date}
+			</if>
+		</where>    
+		ORDER BY sp.sp_code
+		LIMIT #{MpageIndex}, #{MpageSize}
+		
+	</select>
+
+		<!-- 영업실적 갯수 조회  -->
+
+	<select id="countPlanList" resultType="int">
+		SELECT 
+				count(*)
+			FROM tb_salplan sp
+				 inner join tb_biz bz ON sp.biz_code = bz.biz_code
+				 inner join tb_pb pb ON sp.pb_code = pb.pb_code
+				 inner join tb_ps ps ON sp.pb_code = ps.pb_code and sp.ps_code = ps.ps_code
+				 inner join tb_product pd ON pd.prd_code = sp.prd_code AND pd.pb_code = sp.pb_code AND pd.ps_code = sp.ps_code
+		<where>
+			<if test="(loginID_search != null) and (!loginID_search.equals(''))">
+       			and sp.loginID = #{loginID_search}	
+			</if>
+			<if test="(prolall != null) and (!prolall.equals(''))">
+				and pb.pb_code LIKE CONCAT('%', #{prolall}, '%')
+			</if>
+			<if test="(promall != null) and (!promall.equals(''))">
+				and ps.ps_code LIKE CONCAT('%', #{promall}, '%')
+			</if>
+			<if test="(prodall != null) and (!prodall.equals(''))">
+				and pd.prd_code LIKE CONCAT('%', #{prodall}, '%')
+			</if>
+			<if test="(sp_date != null) and (!sp_date.equals(''))">
+				and sp.sp_date <![CDATA[=]]> #{sp_date}
+			</if>
+		</where>    
+	</select>
+
+
+</mapper>

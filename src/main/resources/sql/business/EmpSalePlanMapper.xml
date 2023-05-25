@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+
+<!-- 맵퍼네임 -->
+<mapper namespace="kr.happyjob.study.business.dao.EmpSalePlanDao">
+
+	<!-- 목록 조회 -->
+	<select id="planList" resultType="kr.happyjob.study.business.model.EmpSalePlanModel" parameterType ="hashmap" >
+	/* kr.happyjob.study.business.model.EmpSalePlanModel */
+	SELECT 
+			sp.loginID 
+			,sp.sp_code
+		    ,sp.sp_date
+		    ,bz.biz_name as biz_name
+		    ,pb.pb_name as pb_name
+		    ,ps.ps_name as ps_name
+		    ,pd.prd_name as prd_name
+		    ,sp.sp_gcnt 
+		    ,sp.sp_rcnt 
+		    ,sp.sp_goal
+		FROM tb_salplan sp
+		    inner join tb_biz bz ON sp.biz_code = bz.biz_code
+		    inner join tb_pb pb ON sp.pb_code = pb.pb_code
+		    inner join tb_ps ps ON sp.pb_code = ps.pb_code and sp.ps_code = ps.ps_code
+		    inner join tb_product pd ON pd.prd_code = sp.prd_code AND pd.pb_code = sp.pb_code AND pd.ps_code = sp.ps_code
+		<where>
+			<if test="(client_search != null) and (!client_search.equals(''))">
+				and bz.biz_code LIKE CONCAT('%', #{client_search}, '%')
+			</if>
+			<if test="(sp_date1 != null) and (!sp_date1.equals(''))">
+				and sp.sp_date <![CDATA[>=]]> #{sp_date1}
+			</if>
+			<if test="(sp_date2 != null) and (!sp_date2.equals(''))">
+				and sp.sp_date <![CDATA[<=]]> #{sp_date2}
+			</if>
+			<if test="(prolall != null) and (!prolall.equals(''))">
+				and pb.pb_code LIKE CONCAT('%', #{prolall}, '%')
+			</if>
+			<if test="(promall != null) and (!promall.equals(''))">
+				and ps.ps_code LIKE CONCAT('%', #{promall}, '%')
+			</if>
+			<if test="(prodall != null) and (!prodall.equals(''))">
+				and pd.prd_code LIKE CONCAT('%', #{prodall}, '%')
+			</if>
+		</where>    
+		ORDER BY sp.sp_code
+		LIMIT #{pageindex}, #{pageSize111}
+		
+	</select>
+	
+	<!-- 전체 목록 카운트 -->
+	<select id="planCnt" resultType="int" parameterType="hashmap">
+	SELECT 
+			count(*)
+		FROM tb_salplan sp
+		    inner join tb_biz bz ON sp.biz_code = bz.biz_code
+		    inner join tb_pb pb ON sp.pb_code = pb.pb_code
+		    inner join tb_ps ps ON sp.pb_code = ps.pb_code and sp.ps_code = ps.ps_code
+		    inner join tb_product pd ON pd.prd_code = sp.prd_code AND pd.pb_code = sp.pb_code AND pd.ps_code = sp.ps_code
+		<where>
+			<if test="(client_search != null) and (!client_search.equals(''))">
+				and bz.biz_code LIKE CONCAT('%', #{client_search}, '%')
+			</if>
+			<if test="(sp_date1 != null) and (!sp_date1.equals(''))">
+				and sp.sp_date <![CDATA[>=]]> #{sp_date1}
+			</if>
+			<if test="(sp_date2 != null) and (!sp_date2.equals(''))">
+				and sp.sp_date <![CDATA[<=]]> #{sp_date2}
+			</if>
+			<if test="(prolall != null) and (!prolall.equals(''))">
+				and pb.pb_code LIKE CONCAT('%', #{prolall}, '%')
+			</if>
+			<if test="(promall != null) and (!promall.equals(''))">
+				and ps.ps_code LIKE CONCAT('%', #{promall}, '%')
+			</if>
+			<if test="(prodall != null) and (!prodall.equals(''))">
+				and pd.prd_code LIKE CONCAT('%', #{prodall}, '%')
+			</if>
+		</where>    
+	
+	</select>
+
+
+	<!-- 단건조회  -->
+	<select id ="planListSelect" resultType ="kr.happyjob.study.business.model.EmpSalePlanModel" >
+	SELECT 
+			sp.loginID 
+			,sp.sp_code
+		    ,sp.sp_date
+		    ,sp.biz_code
+		    ,sp.pb_code
+		    ,sp.ps_code
+		    ,sp.prd_code
+		    ,bz.biz_name as biz_name
+		    ,pb.pb_name as pb_name
+		    ,ps.ps_name as ps_name
+		    ,pd.prd_name as prd_name
+		    ,sp.sp_gcnt 
+		    ,sp.sp_rcnt 
+		    ,sp.sp_goal
+	  FROM tb_salplan sp
+		    inner join tb_biz bz ON sp.biz_code = bz.biz_code
+		    inner join tb_pb pb ON sp.pb_code = pb.pb_code
+		    inner join tb_ps ps ON sp.pb_code = ps.pb_code and sp.ps_code = ps.ps_code
+		    inner join tb_product pd ON pd.prd_code = sp.prd_code AND pd.pb_code = sp.pb_code AND pd.ps_code = sp.ps_code
+	  WHERE sp.sp_code = #{spcode} 
+	</select> 
+	
+	<!-- <select id="clientSelect" resultType="kr.happyjob.study.business.model.EmpSalePlanModel" parameterType ="hashmap" >
+	SELECT	
+			biz_code
+			,biz_name
+		FROM tb_biz
+	</select> -->
+	
+	
+	<!-- 계획 등록 -->
+	<insert id="insertPlanList">
+		<selectKey resultType="int" keyProperty="spcode" order="BEFORE">
+            select ifnull(max(sp_code),0) + 1 from tb_salplan
+        </selectKey> 
+		INSERT INTO tb_salplan (
+									loginID 
+			                        ,sp_code
+			                        ,biz_code
+			                        ,sp_goal
+			                        ,pb_code
+		                		    ,ps_code
+		                		    ,prd_code
+			                        ,sp_gcnt
+			                        ,sp_date
+			                        ,sp_rcnt
+		                        ) VALUES (	#{loginId}
+		                                    ,#{spcode}
+		                                    ,#{client_search}
+		                                    ,#{sp_goal}
+		                                    ,#{prolall}
+		                                    ,#{promall}
+		                                    ,#{prodall}
+		                                    ,#{sp_gcnt}
+		                                    ,DATE_FORMAT(now(), '%Y-%m-%d')
+		                                    ,0
+		                                  )
+	</insert>
+	
+	
+	<!-- 계획 수정 -->
+	<update id="updatePlanList">
+		UPDATE tb_salplan SET 
+								loginID = #{loginId}
+		                        ,biz_code = #{client_search}
+		                        ,sp_goal = #{sp_goal}
+		                        ,pb_code = #{prolall}
+	                		    ,ps_code = #{promall}
+	                		    ,prd_code = #{prodall}
+		                        ,sp_gcnt = #{sp_gcnt}
+					WHERE sp_code = #{spcode} 						
+
+	</update>
+	
+	
+	<!-- 계획 삭제 -->
+	<delete id="deletePlanList">
+		DELETE FROM tb_salplan
+    		WHERE sp_code = #{spcode}
+	</delete>
+	
+	
+</mapper>

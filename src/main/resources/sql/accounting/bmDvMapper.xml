@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.accounting.dao.BmDvDao">
+	
+	<!-- 지출결의서 리스트 조회 (신청페이지) : 관리자, 회계총무,영업 -->
+	
+	<select id="list" resultType = "kr.happyjob.study.accounting.model.BmDvModel">
+	select 	td.dv_code,
+				td.bacc_code,
+				tbb.bacc_name bacc_name,
+				td.dacc_code,
+				tda.dacc_name dacc_name,
+				td.biz_code,
+				tbiz.biz_name biz_name,
+				td.dv_date,
+				td.dv_udate,
+				td.dv_memo,
+				td.dv_reres,
+				td.file_code,
+				td.loginID,
+				ui1.name,
+				td.dv_fee,
+				td.dv_signUser signID,
+				ui2.name signName,
+				dc.detail_name detail_name,
+				td.dv_sign
+      
+      
+      
+      from tb_dv td
+        inner join tb_biz tbiz on td.biz_code = tbiz.biz_code
+        left outer join tb_dacc tda on td.dacc_code = tda.dacc_code and td.bacc_code = tda.bacc_code
+        inner join tb_bacc tbb on td.bacc_code = tbb.bacc_code
+        inner join tb_userinfo ui1 on td.loginID = ui1.loginID
+        left outer join tb_detail_code dc on dc.group_code = 'dv_sign' and td.dv_sign = dc.detail_code
+        left outer join tb_file tfile on td.file_code = tfile.file_code
+        left outer join tb_userinfo ui2 on td.dv_signUser = ui2.loginID
+        <where>
+			    <if test="(bacc_code != null) and (!bacc_code.equals(''))">
+			       AND td.bacc_code = #{bacc_code}
+			    </if>
+			    <if test="(dacc_code != null) and (!dacc_code.equals(''))">
+			       AND td.dacc_code = #{dacc_code}	
+			    </if>
+				<if test="(sdv_date != null) and (! sdv_date.equals(''))">
+  					AND DATE_FORMAT(td.dv_date, '%Y-%m-%d')  <![CDATA[>=]]> STR_TO_DATE(#{sdv_date}, '%Y-%m-%d')   
+         		</if>
+         		<if test="(sdv_udate != null) and (!sdv_udate.equals(''))">
+         			AND DATE_FORMAT(td.dv_date, '%Y-%m-%d')  <![CDATA[<=]]> STR_TO_DATE(#{sdv_udate}, '%Y-%m-%d')   
+         		</if> 
+				<if test="(dv_sign != null) and (!dv_sign.equals(''))">
+			       AND td.dv_sign = #{dv_sign}
+			    </if>
+		</where>
+		ORDER BY td.dv_code DESC  
+		LIMIT #{pageindex},#{pageSize}
+	</select>
+	
+	<!-- 지출결의 신청 리스트 카운트 -->
+	<select id="dvtotalcnt" resultType = "int">
+		SELECT  count(*)
+		 from tb_dv td
+        inner join tb_biz tbiz on td.biz_code = tbiz.biz_code
+        left outer join tb_dacc tda on td.dacc_code = tda.dacc_code and td.bacc_code = tda.bacc_code
+        inner join tb_bacc tbb on td.bacc_code = tbb.bacc_code
+        inner join tb_userinfo ui1 on td.loginID = ui1.loginID
+        left outer join tb_detail_code dc on dc.group_code = 'dv_sign' and td.dv_sign = dc.detail_code
+        left outer join tb_file tfile on td.file_code = tfile.file_code
+        left outer join tb_userinfo ui2 on td.dv_signUser = ui2.loginID
+		   
+	
+	<where>
+			    <if test="(bacc_code != null) and (!bacc_code.equals(''))">
+			       AND td.bacc_code = #{bacc_code}
+			    </if>
+			    <if test="(dacc_code != null) and (!dacc_code.equals(''))">
+			       AND td.dacc_code = #{dacc_code}	
+			    </if>
+				<if test="(sdv_date != null) and (! sdv_date.equals(''))">
+  					AND DATE_FORMAT(td.dv_date, '%Y-%m-%d')  <![CDATA[>=]]> STR_TO_DATE(#{sdv_date}, '%Y-%m-%d')   
+         		</if>
+         		<if test="(sdv_udate != null) and (!sdv_udate.equals(''))">
+         			AND DATE_FORMAT(td.dv_date, '%Y-%m-%d')  <![CDATA[<=]]> STR_TO_DATE(#{sdv_udate}, '%Y-%m-%d')   
+         		</if> 
+				<if test="(dv_sign != null) and (!dv_sign.equals(''))">
+			       AND td.dv_sign = #{dv_sign}
+			    </if>
+		</where>
+	</select>
+	<select id="detail" resultType="kr.happyjob.study.accounting.model.BmDvModel">
+	select td.dv_code,
+      td.bacc_code,
+      tbb.bacc_name bacc_name,
+      td.dacc_code,
+      tda.dacc_name dacc_name,
+      td.biz_code,
+      tbiz.biz_name biz_name,
+      td.dv_date,
+      td.dv_udate,
+      td.dv_memo,
+      td.dv_reres,
+      td.file_code,
+      td.loginID,
+      ui1.name,
+      td.dv_fee,
+      td.dv_signUser signID,
+      ui2.name signName,
+      dc.detail_name detail_name,
+      td.dv_sign,
+      tfile.size file_size,
+      tfile.abs_path file_madd,
+      tfile.rel_path file_nadd,
+      tfile.file_name file_name
+      
+      
+      
+      
+      from tb_dv td
+        inner join tb_biz tbiz on td.biz_code = tbiz.biz_code
+        left outer join tb_dacc tda on td.dacc_code = tda.dacc_code and td.bacc_code = tda.bacc_code
+        inner join tb_bacc tbb on td.bacc_code = tbb.bacc_code
+        inner join tb_userinfo ui1 on td.loginID = ui1.loginID
+        left outer join tb_detail_code dc on dc.group_code = 'dv_sign' and td.dv_sign = dc.detail_code
+        left outer join tb_file tfile on td.file_code = tfile.file_code
+        left outer join tb_userinfo ui2 on td.dv_signUser = ui2.loginID
+     	
+     	where
+     	td.dv_code = #{dv_code}
+	</select>
+	<update id="dvSave">
+		update tb_dv
+				set dv_signUser = #{dv_signUser},
+				dv_sign = #{dv_sign},
+				dv_reres = #{dv_return}
+				
+				where dv_code = #{dv_code}
+	</update>
+	
+	<insert id="fnlupdate">
+	 <selectKey resultType="int" keyProperty="fnl_code" order="BEFORE">
+            select ifnull(max(fnl_code),0) + 1 from tb_fnl
+         </selectKey>
+			insert into tb_fnl (
+									fnl_code,
+									bacc_code,
+									dacc_code,
+									fnl_date,
+									fnl_price,
+									fnl_div
+									) values(
+										#{fnl_code},
+										#{bacc_code},
+										#{dacc_code},
+										 DATE_FORMAT(now(), '%Y-%m-%d'),
+										 #{dv_fee},
+										 #{dv_code}
+									)
+	</insert>
+		
+		 
+	
+</mapper>
+

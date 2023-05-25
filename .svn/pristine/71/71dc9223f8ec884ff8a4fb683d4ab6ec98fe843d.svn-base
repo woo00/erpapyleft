@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.employee.dao.EmpTaDao">
+	<select id="emptalist" resultType="kr.happyjob.study.employee.model.EmpTaModel">
+	select 
+			tv.va_code,
+			tv.loginID,
+			ui2.name name,
+			dc.detail_name va_name,
+			tv.st_date,
+			tv.ed_date,
+			tv.app_date,
+			ui.name sign_username,
+			dc2.detail_name sign_ynname
+		from tb_va tv
+			inner join tb_detail_code dc on dc.group_code= "va_div" and dc.detail_code = tv.va_div
+			left outer join tb_userinfo ui on tv.sign_user = ui.loginID
+			inner join tb_userinfo ui2 on tv.loginID = ui2.loginID
+			inner join tb_detail_code dc2 on dc2.group_code = "sign_yn" and dc2.detail_code = tv.sign_yn
+			<where>    
+               <if test="(loginID != null) and (!loginID.equals(''))">
+                    and tv.loginID Like CONCAT('%', #{loginID}, '%')
+               </if>
+               <if test="(userNm != null) and (!userNm.equals(''))">
+                    and ui2.name Like CONCAT('%', #{userNm}, '%')
+               </if>          
+               <if test="(srcsdate != null) and (!srcsdate.equals(''))">
+                   and tv.st_date  <![CDATA[>=]]> #{srcsdate}
+               </if>               
+               <if test="(srcedate != null) and (!srcedate.equals(''))">
+                  and tv.ed_date <![CDATA[<=]]> #{srcedate}
+               </if>
+                  <if test= 'signYn =="Y"'>
+                  		and tv.sign_yn = 'Y'
+                  </if>
+                  <if test= 'signYn=="N"'>
+                  		and tv.sign_yn = 'N'
+                  </if>
+                  <if test= 'signYn=="W"'>
+                  		and tv.sign_yn = 'W'
+                  </if>
+          </where> 
+			
+		order by tv.va_code DESC
+		LIMIT #{pageindex}, #{pageSize}
+	</select>
+	
+	
+	<select id="emptalistcnt" resultType="int">
+	select count(*)
+		from tb_va tv
+			inner join tb_detail_code dc on dc.group_code= "va_div" and dc.detail_code = tv.va_div
+			left outer join tb_userinfo ui on tv.sign_user = ui.loginID
+			inner join tb_userinfo ui2 on tv.loginID = ui2.loginID
+			inner join tb_detail_code dc2 on dc2.group_code = "sign_yn" and dc2.detail_code = tv.sign_yn
+			<where>     
+               <if test="(loginID != null) and (!loginID.equals(''))">
+                    and tv.loginID Like CONCAT('%', #{loginID}, '%')
+               </if>
+               <if test="(userNm != null) and (!userNm.equals(''))">
+                    and ui2.name Like CONCAT('%', #{userNm}, '%')
+               </if>          
+               <if test="(srcsdate != null) and (!srcsdate.equals(''))">
+                   and tv.st_date  <![CDATA[>=]]> #{srcsdate}
+               </if>               
+               <if test="(srcedate != null) and (!srcedate.equals(''))">
+                  and tv.ed_date <![CDATA[<=]]> #{srcedate}
+               </if>
+                  <if test= 'signYn =="Y"'>
+                  		and tv.sign_yn = 'Y'
+                  </if>
+                  <if test= 'signYn=="N"'>
+                  		and tv.sign_yn = 'N'
+                  </if>
+                  <if test= 'signYn=="W"'>
+                  		and tv.sign_yn = 'W'
+                  </if>
+          </where> 
+	</select>		
+
+	<select id="detail" resultType="kr.happyjob.study.employee.model.EmpTaModel">
+		select 
+  			dc.detail_name dept_name,
+  			dc2.detail_name va_name,
+  			ui.name name,
+  			tv.loginID,
+  			tv.em_hp,
+  			tv.st_date,
+  			tv.ed_date,
+  			tv.vcn_reason,
+  			tv.app_date,
+  			tv.sign_yn,
+  			tv.re_reason
+  		from tb_va tv
+  			inner join tb_userinfo ui ON ui.loginID = tv.loginID
+  			left outer join tb_detail_code dc on dc.group_code = 'dep_code' and dc.detail_code = ui.dep_code
+ 		 	inner join tb_detail_code dc2 on dc2.group_code = 'va_div' and dc2.detail_code = tv.va_div
+  
+ 		 where tv.va_code = #{va_code}
+	
+	</select>
+
+	<update id="detailsave">
+		update tb_va
+				set sign_yn = #{sign_yn},
+					 re_reason = #{re_reason},
+					 sign_user = #{loginID}
+					 
+			where va_code = #{va_code}		 
+	</update>
+
+
+
+</mapper>

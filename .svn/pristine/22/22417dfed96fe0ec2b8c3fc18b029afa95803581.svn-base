@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.business.dao.OeManagementDao">
+
+<select id="oemlist"  resultType= "kr.happyjob.study.business.model.OeManagementModel">
+	
+	select 
+      te.est_code,
+      te.biz_code,
+      tb.biz_name,
+      tp.sup_price price,
+      tp.prd_name,
+      te.est_eo,
+      te.est_edate,
+      te.est_odate
+      
+  from tb_est te
+      inner join tb_biz tb ON tb.biz_code = te.biz_code
+      inner join tb_product tp ON tp.prd_code = te.prd_code AND tp.pb_code = te.pb_code AND tp.ps_code = te.ps_code
+      inner join tb_userinfo ui ON ui.loginID = te.loginID
+ <where>
+ 	<if test='(client_search != null) and (client_search != "")' >
+ 		and tb.biz_code = #{client_search}
+ 	</if>
+ 	<if test="(est_date != null) and (!est_date.equals(''))">
+ 		 and te.est_edate  <![CDATA[>=]]> #{est_date}
+ 	</if>
+ </where>
+		 order by te.est_code DESC
+		LIMIT #{pageindex}, #{pageSize}
+ </select>
+ 
+ <select id="oemlistcnt"  resultType= "int">
+	select count(*)
+
+	from tb_est te
+	inner join tb_biz tb ON tb.biz_code = te.biz_code
+	inner join tb_product tp ON tp.prd_code = te.prd_code AND tp.pb_code =
+	te.pb_code AND tp.ps_code = te.ps_code
+	inner join tb_userinfo ui ON ui.loginID = te.loginID
+	<where>
+		<if test='(client_search != null) and (client_search != "")'>
+			and tb.biz_code = #{client_search}
+		</if>
+		<if test="(est_date != null) and (!est_date.equals(''))">
+			and te.est_edate  <![CDATA[>=]]>
+			#{est_date}
+		</if>
+	</where>
+           
+ </select>
+ 
+ <select id="select"  resultType= "kr.happyjob.study.business.model.OeManagementModel">
+	/*kr.happy.study.study.dao.OeManagementDao.select*/
+	select biz_code,
+			biz_name
+  from tb_biz
+ </select>
+ 
+ <select id="detail" resultType = "kr.happyjob.study.business.model.OeManagementModel">
+select 
+		      tbz.biz_name biz_name,
+		      tbz.biz_number biz_number,
+		      tbz.biz_iname biz_iname,
+		      tbz.biz_addr biz_addr,
+		      tbz.biz_daddr biz_daddr,
+		      tbz.biz_phone biz_phone,
+		      tbz.biz_code biz_code,
+		      te.loginID,
+		      tp.prd_name prd_name,
+		      te.prd_code,
+		      te.pb_code,
+		      te.ps_code,
+		      te.est_yn,
+		      te.est_odate,
+		      te.est_eo,
+		      te.est_edate,
+		      te.est_cnt,
+		      tp.sup_price price,
+		      tp.minven supply_value,
+		      te.est_ocnt,
+		      te.sp_code 
+      from tb_est te
+	        inner join tb_userinfo ui on te.loginID = ui.loginID
+	        inner join tb_biz tbz on te.biz_code = tbz.biz_code
+	        inner join tb_product tp on te.prd_code = tp.prd_code and tp.pb_code = te.pb_code and tp.ps_code = te.ps_code
+      where te.est_code = #{est_code}
+ </select>
+ 
+  <select id="detail2" resultType = "kr.happyjob.study.business.model.OeManagementModel">
+select *
+    from tb_biz
+    where tb_biz.biz_code = 999;
+ </select>
+ 
+ <update id="insert">
+ 		update tb_est
+ 				set
+ 						loginID=#{loginId},
+	 					est_odate = DATE_FORMAT(now(), '%Y-%m-%d'),
+ 						est_eo = "O" ,
+ 						est_ocnt = #{est_ocnt},
+ 						est_yn = #{est_yn}
+ 					
+ 				where est_code = #{num}
+ </update>
+ 
+  <update id="update">
+ 		update tb_est
+ 				set
+ 						loginID=#{loginId},
+ 						est_ocnt = #{est_ocnt},
+ 						est_yn = #{est_yn}
+ 					
+ 				where est_code = #{num}
+ </update>
+ <update id="mprupdate">
+ update tb_product tp inner join tb_est te on tp.prd_code = te.prd_code
+          set
+              tp.minven = tp.minven - te.est_ocnt
+              
+          where tp.prd_code = #{prd_code} and te.est_code = #{num}
+ </update>
+ 
+ <insert id="fnlupdate">
+ <selectKey resultType="int" keyProperty="fnl_code" order="BEFORE">
+            select ifnull(max(fnl_code),0) + 1 from tb_fnl
+         </selectKey> 
+ insert into tb_fnl (
+                            fnl_code,
+                            bacc_code,
+                            dacc_code,
+                            fnl_price,
+                            fnl_date,     
+                            fnl_div
+ 							)
+ 						select #{fnl_code},
+        		 								'B',
+        	  									 108,
+        										(select round((prod.sup_price + (prod.sup_price/10)) * est.est_ocnt) price  from tb_est est
+                        							inner join tb_product prod on est.prd_code = prod.prd_code
+                      								where est.est_code = #{num} and est.est_yn = 'y'
+            									 ) fnl_price,
+            									 DATE_FORMAT(now(), '%Y-%m-%d'),
+            									 #{num}
+            				 
+ 
+ </insert>
+ <update id="salupdate">
+ 	update tb_salplan ts inner join tb_est te on ts.sp_code = te.sp_code
+          set 
+              ts.sp_rcnt = te.est_ocnt,
+              ts.est_code = te.est_code
+           where ts.sp_code = #{sp_code}    
+ </update>
+ 
+ 
+</mapper>

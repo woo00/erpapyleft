@@ -1,0 +1,35 @@
+package kr.happyjob.study.accounting.dao;
+
+import java.util.List;
+import java.util.Map;
+
+import kr.happyjob.study.accounting.model.DvModel;
+
+
+public interface DvDao {
+
+	/** 지출결의 목록 조회(신청페이지) */
+	public List<DvModel> dvList(Map<String, Object> paramMap);
+//	카운트
+	public int dvListcnt(Map<String, Object> paramMap) throws Exception;
+//상세
+	public DvModel dvDetail(Map<String, Object> paramMap) throws Exception;
+	
+//	저장
+	public int dvSave(Map<String, Object> paramMap) throws Exception;
+	
+//	수정
+	public int dvUpdate(Map<String, Object> paramMap) throws Exception;
+	
+//	삭제	
+	public int dvDelete(Map<String, Object> paramMap) throws Exception;
+	
+//	파일등록
+	public int dvFile(Map<String, Object> paramMap) throws Exception;
+	
+//	파일수정
+	public int dvFileUpdate(Map<String, Object> paramMap) throws Exception;
+	 
+//	파일삭제
+	public int dvFileDelete(Map<String, Object> paramMap) throws Exception;
+}

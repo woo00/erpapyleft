@@ -1,0 +1,557 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.employee.dao.EmpPayDao">
+	<select id="getPaymentList" resultType="kr.happyjob.study.employee.model.EmpPaymentModel">
+		select
+		    psal_date
+		  , loginID
+		  , dep_name
+		  , grade_name
+		  , name
+		  , format(an_salary, 0) an_salary
+		  , format(salary, 0) salary
+		  , format(ip, 0) ip
+		  , format(hi, 0) hi
+		  , format(ii, 0) ii
+		  , format(ei, 0) ei
+		  , format(it, 0) it
+		  , format(salary - (ip + hi + ii + ei + it), 0) act_salary
+		  , pay_yn
+		from (
+		  select
+		      psal_date
+		    , loginID
+		    , dep_name
+		    , grade_name
+		    , name
+		    , an_salary
+		    , salary
+		    , floor(salary * #{ip}) ip
+		    , floor(salary * #{hi}) hi
+		    , floor(salary * #{ii}) ii 
+		    , floor(salary * #{ei}) ei 
+		    , floor(salary * #{it}) it 
+		    , pay_yn
+		  from (
+		    select
+		        psal_date
+		      , loginID
+		      , dep_name
+		      , grade_name
+		      , name
+		      , an_salary
+		      , ceil(case when minus <![CDATA[<]]> date_format(last_day(concat(#{sal_date}, '-01')), '%d') then
+		        	an_salary / 12 / 30 * minus  
+		      	else
+		        	an_salary / 12
+		      	end) salary
+		      , pay_yn
+		    from (
+		      select
+		          tu.loginID
+		        , ifnull(tp.psal_date, '-') psal_date
+		        , dc1.detail_name dep_name
+		        , dc1.detail_code
+		        , dc2.detail_name grade_name
+		        , tu.name
+		        , sal.an_salary
+		        , sal.minus
+		        , ifnull(tp.pay_yn, 'N') pay_yn
+		      from tb_userinfo tu
+		      left outer join (
+		        select 
+		            loginID
+		          , sal_date
+		          , psal_date
+		          , pay_yn
+		        from 
+		          tb_pay 
+		        where 
+		          sal_date = substring_index(concat(#{sal_date}, '-01'), '-', 2)
+		      ) tp
+		      on tu.loginId = tp.loginID
+		      inner join (
+		        select 
+		          tu.loginID
+		          , an_salary
+		          , datediff(last_day(concat(#{sal_date}, '-01')), date_format(ts.valid_from, '%Y-%m-%d')) + 1 minus
+		        from tb_userinfo tu
+		        inner join tb_sal ts
+		        on tu.loginID = ts.loginID
+		        and date_format(concat(#{sal_date}, '-01'), '%Y-%m-%d') 
+		        between 
+		          last_day(date_format(ts.valid_from, '%Y-%m-%d') - interval 1 month) + interval 1 day
+		        and 
+		          ifnull(date_format(ts.valid_to, '%Y-%m-%d'), last_day(concat(#{sal_date}, '-01')))
+		      ) sal
+		      on tu.loginID = sal.loginID
+		      inner join tb_detail_code dc1
+		      on dc1.detail_code = tu.dep_code and dc1.group_code = 'dep_code'
+		      inner join tb_detail_code dc2
+		      on dc2.detail_code = tu.grade_code and dc2.group_code = 'grade_code'
+		      	<where>
+					<if test="(searchKey_dept != null) and (!searchKey_dept.equals(''))">
+						and dc1.detail_code = #{searchKey_dept}
+					</if>
+					<if test="(searchKey_poscd != null) and (!searchKey_poscd.equals(''))">
+						and dc2.detail_code = #{searchKey_poscd}
+					</if>
+					<if test="(searchWord != null) and (!searchWord.equals('')) and (searchKey.equals('loginID'))">
+						and tu.loginID like concat('%', #{searchWord}, '%')
+					</if>
+					<if test="(searchWord != null) and (!searchWord.equals('')) and (searchKey.equals('name'))">
+						and tu.name like concat('%', #{searchWord}, '%')
+					</if>
+					<if test="(payment_state != null) and (!payment_state.equals(''))">
+						<if test="(payment_state == 0)">
+							and tp.pay_yn is null
+						</if>
+						<if test="(payment_state == 1)">
+							and tp.pay_yn = 'Y'
+						</if>
+					</if>
+				</where>
+		    ) a1
+		  ) a2
+		) a3
+		order by loginID
+		limit #{pageIndex}, #{pageSize}
+	</select>
+	
+	<select id="getPaymentListCount" resultType="int">
+		  select
+	        count(*)
+	      from tb_userinfo tu
+	      left outer join (
+	        select 
+	            loginID
+	          , sal_date
+	          , psal_date
+	          , pay_yn
+	        from 
+	          tb_pay 
+	        where 
+	          sal_date = substring_index(concat(#{sal_date}, '-01'), '-', 2)
+	      ) tp
+	      on tu.loginId = tp.loginID
+	      inner join (
+			select 
+			  tu.loginID
+			  , an_salary
+			  , datediff(last_day(concat(#{sal_date}, '-01')), date_format(ts.valid_from, '%Y-%m-%d')) + 1 minus
+			from tb_userinfo tu
+			inner join tb_sal ts
+			on tu.loginID = ts.loginID
+			and date_format(concat(#{sal_date}, '-01'), '%Y-%m-%d') 
+			between 
+			  last_day(date_format(ts.valid_from, '%Y-%m-%d') - interval 1 month) + interval 1 day
+			and 
+			  ifnull(date_format(ts.valid_to, '%Y-%m-%d'), last_day(concat(#{sal_date}, '-01')))
+	      ) sal
+	      on tu.loginID = sal.loginID
+	      inner join tb_detail_code dc1
+	      on dc1.detail_code = tu.dep_code and dc1.group_code = 'dep_code'
+	      inner join tb_detail_code dc2
+		  on dc2.detail_code = tu.grade_code and dc2.group_code = 'grade_code'
+			<where>
+				<if test="(searchKey_dept != null) and (!searchKey_dept.equals(''))">
+					and dc1.detail_code = #{searchKey_dept}
+				</if>
+				<if test="(searchKey_poscd != null) and (!searchKey_poscd.equals(''))">
+					and dc2.detail_code = #{searchKey_poscd}
+				</if>
+				<if test="(searchWord != null) and (!searchWord.equals('')) and (searchKey.equals('loginID'))">
+					and tu.loginID like concat('%', #{searchWord}, '%')
+				</if>
+				<if test="(searchWord != null) and (!searchWord.equals('')) and (searchKey.equals('name'))">
+					and tu.name like concat('%', #{searchWord}, '%')
+				</if>
+				<if test="(payment_state != null) and (!payment_state.equals(''))">
+					<if test="(payment_state == 0)">
+						and tp.pay_yn is null
+					</if>
+					<if test="(payment_state == 1)">
+						and tp.pay_yn = 'Y'
+					</if>
+				</if>
+			</where>
+	</select>
+	
+	<!-- 단건 insert -->
+	<insert id="addEmpPayment" parameterType="java.util.HashMap">
+		INSERT INTO tb_pay (
+			  pay_code
+			, loginID
+			, an_salary
+			, salary
+			, sal_date
+			, intl_psn
+			, ht_irc
+			, el_irc
+			, ia_irc
+			, it
+			, act_salary
+			, pay_yn
+			, psal_date
+			)
+			SELECT
+			  	(SELECT ifnull(max(cast(pay_code as UNSIGNED)),0) + (@rownum:=@rownum+1) from tb_pay)
+			  	, loginID
+			  	, an_salary
+			  	, salary
+			  	, sal_date
+			  	, ip
+			  	, hi
+			  	, ii 
+			  	, ei 
+			  	, it 
+			  	, salary - (ip + hi + ii + ei + it) act_salary
+			  	, pay_yn
+			  	, psal_date
+			FROM(
+			  SELECT
+			      loginID
+			    , an_salary
+			    , salary
+			    , sal_date
+			    , floor(salary * #{ip}) ip
+			    , floor(salary * #{hi}) hi
+			    , floor(salary * #{ii}) ii 
+			    , floor(salary * #{ei}) ei 
+			    , floor(salary * #{it}) it 
+			    , pay_yn
+			    , psal_date
+			  FROM(
+			  SELECT
+			    tu.loginID
+			    , an_salary
+			    , 'Y' pay_yn
+			    , #{sal_date} sal_date
+			    , date_format(now(), '%Y-%m-%d') psal_date
+			    , ceil(case when minus <![CDATA[<]]> date_format(last_day(concat(#{sal_date}, '-01')), '%d') then
+			        an_salary / 12 / 30 * minus  
+			      else
+			        an_salary / 12
+			      end) salary
+			  FROM
+			    tb_userinfo tu
+			  INNER JOIN (
+			    SELECT
+			      	sal_code
+					, loginID
+			      	, an_salary
+			      	, datediff(last_day(concat(#{sal_date}, '-01')), date_format(valid_from, '%Y-%m-%d')) + 1 minus
+			    FROM 
+			    	tb_sal
+			    WHERE 
+					concat(#{sal_date}, '-01')
+			    BETWEEN   
+					last_day(date_format(valid_from, '%Y-%m-%d') - interval 1 month) + interval 1 day
+			    AND 
+					ifnull(date_format(valid_to, '%Y-%m-%d'), last_day(concat(#{sal_date}, '-01')))
+			    AND 
+					loginID in (#{loginID})
+			  ) pay
+			  on tu.loginID = pay.loginID
+			  ) a
+			) aa, (select @rownum:=0) temp
+		
+		<selectKey resultType="string" keyProperty="pay_code" order="AFTER">
+	        SELECT ifnull(MAX(pay_code), 1) FROM tb_pay       
+	    </selectKey>  
+	</insert>
+	
+	<!-- 세금 단건 -->
+	<insert id="addIntl">
+		SET @rownum := 0;
+
+		INSERT INTO tb_fnl(fnl_code,
+		                   bacc_code,
+		                   dacc_code,
+		                   fnl_date,
+		                   fnl_price,
+		                   fnl_div)
+		SELECT (SELECT   ifnull(max(cast(fnl_code AS UNSIGNED)), 0)
+		               + (@rownum := @rownum + 1)
+		        FROM tb_fnl)
+		          fnl_code,
+		       bacc_code,
+		       dacc_code,
+		       fnl_date,
+		       fnl_price,
+		       pay_code fnl_div
+		FROM (SELECT CASE
+		                WHEN x = 1 THEN '101'
+		                WHEN x = 2 THEN '102'
+		                WHEN x = 3 THEN '103'
+		                WHEN x = 4 THEN '104'
+		                WHEN x = 5 THEN '105'
+		                WHEN x = 6 THEN '100'
+		             END
+		                dacc_code,
+		             CASE
+		                WHEN x = 1 THEN 'A'
+		                WHEN x = 2 THEN 'A'
+		                WHEN x = 3 THEN 'A'
+		                WHEN x = 4 THEN 'A'
+		                WHEN x = 5 THEN 'A'
+		                WHEN x = 6 THEN 'A'
+		             END
+		                bacc_code,
+		             CASE
+		                WHEN x = 1 THEN intl_psn
+		                WHEN x = 2 THEN ht_irc
+		                WHEN x = 3 THEN el_irc
+		                WHEN x = 4 THEN ia_irc
+		                WHEN x = 5 THEN it
+		                WHEN x = 6 THEN act_salary
+		             END
+		                fnl_price,
+		             CASE
+		                WHEN x = 1 THEN psal_date
+		                WHEN x = 2 THEN psal_date
+		                WHEN x = 3 THEN psal_date
+		                WHEN x = 4 THEN psal_date
+		                WHEN x = 5 THEN psal_date
+		                WHEN x = 6 THEN psal_date
+		             END
+		                fnl_date,
+		             pay_code
+		      FROM (SELECT *
+		            FROM (SELECT (@rownum := @rownum + 1) row,
+		                         pay_code,
+		                         intl_psn,
+		                         ht_irc,
+		                         el_irc,
+		                         ia_irc,
+		                         it,
+		                         act_salary,
+		                         psal_date
+		                  FROM tb_pay, (SELECT @rownum := 0) temp
+		                  WHERE pay_code IN (#{pay_code})) a,
+		                 (SELECT 1 AS x
+		                  UNION ALL
+		                  SELECT 2
+		                  UNION ALL
+		                  SELECT 3
+		                  UNION ALL
+		                  SELECT 4
+		                  UNION ALL
+		                  SELECT 5
+		                  UNION ALL
+		                  SELECT 6) b) cc) dd,
+		     (SELECT @rownum := 0) temp
+	</insert>
+
+	<select id="empPaymentDetailList" resultType="kr.happyjob.study.employee.model.EmpPaymentModel">
+		select
+			psal_date
+			, sal_date
+			, format(an_salary, 0) an_salary
+			, format(salary, 0) salary
+			, format(intl_psn, 0) ip
+			, format(ht_irc, 0) hi
+			, format(el_irc, 0) ei
+			, format(ia_irc, 0) ii
+			, format(it, 0) it
+			, format(act_salary, 0) act_salary
+		from tb_pay
+		where loginID = #{loginID}
+		order by sal_date desc
+		limit #{pageIndex}, #{pageSize}
+	</select>
+
+	<select id="empPaymentDetailListCount" resultType="int">
+		select
+			count(*)
+		from tb_pay
+		where loginID = #{loginID}
+	</select>
+
+	<select id="empPayHistInfo" resultType="kr.happyjob.study.employee.model.EmpPayHistModel">
+		select
+			tu.loginID
+			,tu.name
+			, dc2.detail_name grade_name
+			, floor(datediff(now(), regdate) / 365) workyear
+			, format(an_salary, 0) an_salary
+			, format(tp.salary, 0) salary
+			, format(intl_psn, 0) ip
+			, format(ht_irc, 0) hi
+			, format(el_irc, 0) ei
+			, format(ia_irc, 0) ii
+			, format(it, 0) it
+			, format(act_salary, 0) act_salary
+		from tb_pay tp
+			inner join tb_userinfo tu
+				on tp.loginID = tu.loginID
+			inner join tb_detail_code dc2
+				on dc2.detail_code = tu.dep_code and dc2.group_code = 'grade_code'
+			WHERE
+				tu.loginID = #{loginID}
+			and
+				tp.sal_date = #{sal_date}
+	</select>
+
+	<insert id="addAllEmpPayment">
+
+		<selectKey order="BEFORE" keyProperty="pay_code" resultType="int">
+			select ifnull(max(pay_code), 0) from tb_pay;
+		</selectKey>
+
+		INSERT INTO tb_pay (
+			  pay_code
+			, loginID
+			, an_salary
+			, salary
+			, sal_date
+			, intl_psn
+			, ht_irc
+			, el_irc
+			, ia_irc
+			, it
+			, act_salary
+			, pay_yn
+			, psal_date
+			)
+		SELECT
+			(SELECT ifnull(max(cast(pay_code as UNSIGNED)),0) + (@rownum:=@rownum+1) from tb_pay) pay_code
+			, LOGINID
+			, AN_SALARY
+			, SALARY
+			, SAL_DATE
+		    , ip
+		    , hi
+		    , ii
+		    , ei
+		    , it
+		    , salary - (ip + hi + ii + ei + it) act_salary
+		    , PAY_YN
+		    , PSAL_DATE
+		FROM(
+			SELECT
+				LOGINID
+				, AN_SALARY
+				, SALARY
+				, SAL_DATE
+				, floor(salary * #{ip}) ip
+			    , floor(salary * #{hi}) hi
+			    , floor(salary * #{ii}) ii
+			    , floor(salary * #{ei}) ei
+			    , floor(salary * #{it}) it
+			    , PAY_YN
+			    , PSAL_DATE
+			FROM(
+				SELECT
+					LOGINID
+					, AN_SALARY
+					, ceil(case when minus <![CDATA[<]]> date_format(last_day(concat(#{sal_date}, '-01')), '%d') then
+						an_salary / 12 / 30 * minus
+				      else
+						an_salary / 12
+				      end) SALARY
+				      , SAL_DATE
+				      , PAY_YN
+				      , PSAL_DATE
+				FROM(
+					SELECT
+						TU.LOGINID
+						, SAL.AN_SALARY
+						, #{sal_date} sal_date
+						, 'Y' PAY_YN
+						, date_format(now(), '%Y-%m-%d') psal_date
+						, SAL.MINUS
+					FROM
+						tb_userinfo TU
+					LEFT OUTER JOIN
+						tb_pay TP
+					ON TU.LOGINID = TP.LOGINID
+					AND TP.SAL_DATE = #{sal_date}
+					INNER JOIN
+					(
+						SELECT
+						  	  loginID
+						  	, an_salary
+						  	, DATEDIFF(LAST_DAY(concat(#{sal_date}, '-01')), DATE_FORMAT(valid_from, '%Y-%m-%d')) + 1 minus
+						FROM
+							tb_sal
+						WHERE
+							concat(#{sal_date}, '-01')
+							BETWEEN
+								LAST_DAY(DATE_FORMAT(valid_from, '%Y-%m-%d') - INTERVAL 1 MONTH) + INTERVAL 1 DAY
+							AND
+								IFNULL(DATE_FORMAT(valid_to, '%Y-%m-%d'), LAST_DAY(concat(#{sal_date}, '-01')))
+					) SAL
+					ON TU.LOGINID = SAL.LOGINID
+					WHERE TP.PAY_YN IS NULL
+				) AA
+			) BB
+		) CC, (select @rownum:=0) temp
+	</insert>
+
+	<insert id="addAllEmpTax">
+		SET @rownum := 0;
+
+		INSERT INTO tb_fnl(fnl_code,
+		                   bacc_code,
+		                   dacc_code,
+		                   fnl_date,
+						   fnl_price,
+		                   fnl_div
+		                   )
+		   SELECT (SELECT ifnull(max(fnl_code), 0) + (@rownum := @rownum + 1)
+		           FROM tb_fnl)
+		             AS fnl_code,
+		          bacc_code,
+		          dacc_code,
+		          date_format(now(), '%Y-%m-%d')
+		             AS fnl_date,
+		          fnl_price,
+		          pay_code as fnl_div
+		   FROM (SELECT CASE
+		                   WHEN x = 1 THEN 'A'
+		                   WHEN x = 2 THEN 'A'
+		                   WHEN x = 3 THEN 'A'
+		                   WHEN x = 4 THEN 'A'
+		                   WHEN x = 5 THEN 'A'
+		                   WHEN x = 6 THEN 'A'
+		                END
+		                   bacc_code,
+		                CASE
+		                   WHEN x = 1 THEN '101'
+		                   WHEN x = 2 THEN '102'
+		                   WHEN x = 3 THEN '103'
+		                   WHEN x = 4 THEN '104'
+		                   WHEN x = 5 THEN '105'
+		                   WHEN x = 6 THEN '100'
+		                END
+		                   dacc_code,
+		                CASE
+		                   WHEN x = 1 THEN intl_psn
+		                   WHEN x = 2 THEN ht_irc
+		                   WHEN x = 3 THEN el_irc
+		                   WHEN x = 4 THEN ia_irc
+		                   WHEN x = 5 THEN it
+		                   WHEN x = 6 THEN act_salary
+		                END
+		                   fnl_price,
+		                CASE WHEN x <![CDATA[<=]]> 6 THEN pay_code END
+		                   pay_code,
+		                sal_date
+		         FROM (SELECT *
+		               FROM tb_pay tp,
+		                    (SELECT 1 AS x
+		                     UNION ALL
+		                     SELECT 2
+		                     UNION ALL
+		                     SELECT 3
+		                     UNION ALL
+		                     SELECT 4
+		                     UNION ALL
+		                     SELECT 5
+							 UNION ALL
+							 SELECT 6) a) b) c
+		   WHERE pay_code <![CDATA[>]]> #{pay_code}
+	</insert>
+</mapper>

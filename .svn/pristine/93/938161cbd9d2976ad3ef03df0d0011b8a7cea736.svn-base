@@ -1,0 +1,169 @@
+package kr.happyjob.study.employee.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import kr.happyjob.study.employee.model.empMgtModel;
+import kr.happyjob.study.employee.service.empMgtService;
+import kr.happyjob.study.hwang.model.HnoticeModel;
+
+@Controller
+@RequestMapping("/employee/")
+public class EmpMgtController {
+	
+	@Autowired
+	empMgtService empmgtservice;
+	
+	// Set logger
+	private final Logger logger = LogManager.getLogger(this.getClass());
+
+	// Get class name for logger
+	private final String className = this.getClass().toString();
+	
+	@RequestMapping("empMgt.do")
+	public String initEmpMgt(Model model, @RequestParam Map<String, Object> paramMap) throws Exception {
+		logger.info("+ Start " + className + ".empMgt");
+		logger.info("   - paramMap : " + paramMap);
+		
+		logger.info("+ End " + className + ".empMgt");
+		return "employee/empMgt";
+	}
+	
+	// 사원 리스트 (초기화면)
+	@RequestMapping("empList.do")
+	public String empList(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		// logger.info :  넘어온 파라미터 확인 가능, 시작과 끝이 제대로 작동 되는지 확인 가능
+		logger.info("+ Start " + className + ".empList");
+		logger.info("   - paramMap : " + paramMap);
+		
+		int empPageSize = Integer.parseInt((String) paramMap.get("empPageSize"));
+		int empCpage = Integer.parseInt((String) paramMap.get("empCpage"));
+		int pageIndex = (empCpage - 1) * empPageSize;
+		
+		paramMap.put("pageIndex", pageIndex);
+		// 넘어오는 데이터는 오브젝트형이므로, 변환 된 pageSize를 다시 put 해줌
+		paramMap.put("empPageSize", empPageSize);
+		
+		List<empMgtModel> emplist = empmgtservice.empList(paramMap);
+		int countListEmp = empmgtservice.countListEmp(paramMap);
+		int maxNum = empmgtservice.maxNum(paramMap);
+		
+		model.addAttribute("empList" , emplist);
+		model.addAttribute("countListEmp" , countListEmp);
+		model.addAttribute("maxNum" , maxNum);
+		System.out.println("maxNum : "+maxNum);
+		
+		logger.info("+ End " + className + ".empList");
+
+		return "employee/empMgtList";
+	}
+	
+
+	
+	@RequestMapping("empRegist.do")
+	@ResponseBody
+	public  Map<String, Object> empRegist(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		logger.info("+ Start " + className + ".empRegist");
+		logger.info("   - paramMap : " + paramMap);
+		System.out.println(paramMap);
+		
+		String action = (String) paramMap.get("action");
+		
+		System.out.println("바뀐 연봉 : "+paramMap.get("year_salary"));
+		System.out.println("원래 연봉 : "+paramMap.get("updatesalay"));
+		
+		System.out.println("바뀐 직급 : "+paramMap.get("poscd"));
+		System.out.println("원래 직급 : "+paramMap.get("prmUpdate"));
+		
+		String year_salary = (String) paramMap.get("year_salary");
+		String updatesalay = (String) paramMap.get("updatesalay");
+		
+		String poscd = (String) paramMap.get("poscd");
+		String prmUpdate = (String) paramMap.get("prmUpdate");
+		
+		Map<String, Object> returnmap = new HashMap<String, Object> ();
+		returnmap.put("result", "SUCCESS");
+
+		if("I".equals(action)) {
+			empmgtservice.fileRegist(paramMap, request);
+			empmgtservice.empRegist(paramMap);
+		} else if("I2".equals(action)) {
+			empmgtservice.prmRegist(paramMap);
+			empmgtservice.salRegist(paramMap);
+		} else if("U".equals(action)) {
+			returnmap.put("action", "U");
+			
+			// 연봉이 수정됐을때
+			if( !year_salary.equals(updatesalay) && updatesalay != null && updatesalay != "") {
+				empmgtservice.salDateUpdate(paramMap);		// 전 데이터 update 먼저
+				empmgtservice.salUpdate(paramMap);
+			};
+			
+			// 직급이 수정됐을때
+			if(!poscd.equals(prmUpdate)  && prmUpdate != null && prmUpdate != "") {
+				empmgtservice.prmUpdate(paramMap);
+			}
+			empmgtservice.fileUpdate(paramMap, request);
+			empmgtservice.empUpdate(paramMap);
+		} 
+		else if("D".equals(action)) {
+			empmgtservice.prmDelete(paramMap);
+			empmgtservice.empDelete(paramMap);
+			empmgtservice.fileDelete(paramMap);
+		}
+
+		logger.info("+ End " + className + ".empRegist");
+		
+		return returnmap;
+	}
+	
+	@RequestMapping("empSelect.do")
+	@ResponseBody
+	public  Map<String, Object> empSelect(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		logger.info("+ Start " + className + ".empSelect");
+		logger.info("   - paramMap : " + paramMap);
+		System.out.println(paramMap.get("loginID"));
+		empMgtModel empSelect = empmgtservice.empSelect(paramMap);
+		
+		Map<String, Object> returnmap = new HashMap<String, Object> ();
+		returnmap.put("result", "SUCCESS");
+		returnmap.put("detailone", empSelect);
+		System.out.println(empSelect.toString());
+		logger.info("+ End " + className + ".empSelect");
+		
+		return returnmap;
+	}
+	
+	@RequestMapping("leaveUpdate.do")
+	public  void leaveUpdate(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		logger.info("+ Start " + className + ".empRegist");
+		logger.info("   - paramMap : " + paramMap);
+		
+		empmgtservice.leaveUpdate(paramMap);
+		System.out.println(paramMap);
+		
+		logger.info("+ End " + className + ".empRegist");
+		
+	}
+
+	
+}

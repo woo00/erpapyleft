@@ -1,0 +1,120 @@
+package kr.happyjob.study.employee.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import kr.happyjob.study.employee.model.EmployeeGradeModel;
+import kr.happyjob.study.employee.service.EmpGradeService;
+
+
+
+@Controller
+@RequestMapping("/employee/")
+public class EmpGradeController {
+	// Set logger
+	private final Logger logger = LogManager.getLogger(this.getClass());
+	// Get class name for logger
+	private final String className = this.getClass().toString();
+	
+	@Autowired
+	EmpGradeService EmpGradeService; 
+	
+	/* 승진내역관리 초기화면*/
+	@RequestMapping("empGrade.do")
+	public String initEmpGrade(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		logger.info("+ Start " + className + ".initEmpGrade");
+		
+		return "employee/empGrade";
+	}//승진내역관리 초기화면 끝
+	
+	
+	/* 승진내역관리 전체 리스트 조회 */
+	@RequestMapping("searchform.do")
+	public String searchform(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		//콘솔에 로그 찍기
+		logger.info("+ Start " + className + ".searchform");
+		logger.info("   - paramMap : " + paramMap);
+		
+		int cpage = Integer.parseInt((String)paramMap.get("cpage"));
+		int pageSize = Integer.parseInt((String)paramMap.get("pageSize"));
+		int pageIndex = (cpage-1)*pageSize;
+		paramMap.put("pageIndex", pageIndex);
+		paramMap.put("pageSize", pageSize);
+		
+		logger.info("   - cpage : " + cpage);
+		logger.info("   - pageIndex : " + pageIndex);
+		
+		//승진 내역 리스트 조회
+		List<EmployeeGradeModel> listEmployeeModel = EmpGradeService.empGradeList(paramMap);
+		model.addAttribute("listEmployeeModel", listEmployeeModel);
+		logger.info("   - listEmployeeModel : " + listEmployeeModel);
+		
+		//승진 내역 리스트 총 글 수 조회
+		int empGradeTotalCnt = EmpGradeService.countEmpGradeList(paramMap);
+		model.addAttribute("empGradeTotalCnt", empGradeTotalCnt);
+		
+		model.addAttribute("pageSize", pageSize);
+		model.addAttribute("cpage", cpage);
+		
+		logger.info("+ End " + className + ".searchform");
+		
+		return "employee/empGradeList";
+	}
+	
+	/* 승진내역관리 상세 리스트 조회 */
+	@RequestMapping("detailGrade.do")
+	@ResponseBody
+	public Map<String, Object> detailGrade(@RequestParam Map<String, Object> paramMap, HttpServletRequest request
+												, HttpServletResponse response, HttpSession session) throws Exception{
+		logger.info("+ Start " + className + ".detailGrade");
+		logger.info("   - paramMap : " + paramMap);
+		
+		int cpage = Integer.parseInt((String)paramMap.get("cpage"));
+		int pageSize = Integer.parseInt((String)paramMap.get("pageSize"));
+		int pageIndex = (cpage-1)*pageSize;
+		paramMap.put("pageIndex", pageIndex);
+		paramMap.put("pageSize", pageSize);
+		
+		logger.info("   - cpage : " + cpage);
+		logger.info("   - pageIndex : " + pageIndex);
+		
+	//	EmployeeGradeModel empDtl = EmpGradeService.viewEmpDtl(paramMap);
+		
+		//승진 내역 상세 리스트 조회
+		List<EmployeeGradeModel> listEmployeeModel = EmpGradeService.empDtlGradeList(paramMap);
+		logger.info("   - listEmployeeModel : " + listEmployeeModel);
+		
+		//승진 내역 상세 리스트 총 글 수 조회
+		int empDtlGradeTotalCnt = EmpGradeService.countEmpDtlGradeList(paramMap);
+		
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		
+		// resultMap.put("empDtl", empDtl);
+		resultMap.put("listEmployeeModel", listEmployeeModel);
+		resultMap.put("empDtlGradeTotalCnt", empDtlGradeTotalCnt);
+		
+		resultMap.put("pageSize", pageSize);
+		resultMap.put("cpage", cpage);
+		
+		logger.info("+ End " + className + ".detailGrade");
+		
+		return resultMap;
+	}
+	
+}

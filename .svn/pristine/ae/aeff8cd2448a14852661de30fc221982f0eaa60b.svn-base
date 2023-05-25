@@ -1,0 +1,144 @@
+package kr.happyjob.study.business.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import kr.happyjob.study.business.model.productModel;
+import kr.happyjob.study.business.service.productService;
+import kr.happyjob.study.employee.model.empMgtModel;
+
+@Controller
+@RequestMapping("business")
+public class ProductController {
+
+	@Autowired
+	productService productservice;
+
+	// Set logger
+	private final Logger logger = LogManager.getLogger(this.getClass());
+
+	// Get class name for logger
+	private final String className = this.getClass().toString();
+
+	@RequestMapping("product.do")
+	public String initProduct(Model model, @RequestParam Map<String, Object> paramMap, HttpSession session,  HttpServletRequest request) throws Exception {
+		logger.info("+ Start " + className + ".product");
+		logger.info("   - paramMap : " + paramMap);
+
+		List<productModel> pbList = productservice.pbList(paramMap);
+		List<productModel> psAList = productservice.psAList(paramMap);
+		List<productModel> psBList = productservice.psBList(paramMap);
+		List<productModel> psCList = productservice.psCList(paramMap);
+		
+		int countPrd = productservice.countListPrd(paramMap);
+		request.setAttribute("count", countPrd);
+		
+		
+		// 사용자 아이디 설정
+		request.setAttribute("loginId", "asd");
+		
+		model.addAttribute("loginID", (String) session.getAttribute("loginId"));
+		System.out.println("*******************");
+		System.out.println((String) session.getAttribute("loginId"));
+		model.addAttribute("pbList", pbList);
+		model.addAttribute("psAList", psAList);
+		model.addAttribute("psBList", psBList);
+		model.addAttribute("psCList", psCList);
+
+		logger.info("+ End " + className + ".product");
+		return "business/product";
+	}
+
+	// 제품 리스트 (초기화면)
+	@RequestMapping("prdList.do")
+	public String prdList(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		// logger.info : 넘어온 파라미터 확인 가능, 시작과 끝이 제대로 작동 되는지 확인 가능
+		logger.info("+ Start " + className + ".prdList");
+		logger.info("   - paramMap : " + paramMap);
+
+		int prdPageSize = Integer.parseInt((String) paramMap.get("prdPageSize"));
+		int prdCpage = Integer.parseInt((String) paramMap.get("prdCpage"));
+		int pageIndex = (prdCpage - 1) * prdPageSize;
+
+		paramMap.put("pageIndex", pageIndex);
+		// 넘어오는 데이터는 오브젝트형이므로, 변환 된 pageSize를 다시 put 해줌
+		paramMap.put("prdPageSize", prdPageSize);
+
+		List<productModel> prdList = productservice.prdList(paramMap);
+		int countPrd = productservice.countListPrd(paramMap);
+
+		model.addAttribute("prdList", prdList);
+		model.addAttribute("countPrd",countPrd);
+		System.out.println(prdList.toString());
+
+		// model.addAttribute("countListEmp" , countListEmp);
+
+		logger.info("+ End " + className + ".prdList");
+
+		return "business/productList";
+	}
+
+	@RequestMapping("prdRegist.do")
+	@ResponseBody
+	public Map<String, Object> prdRegist(Model model, @RequestParam Map<String, Object> paramMap,
+			HttpServletRequest request, HttpServletResponse response, HttpSession session) throws Exception {
+		logger.info("+ Start " + className + ".prdRegist");
+		logger.info("   - paramMap : " + paramMap);
+		System.out.println(paramMap);
+
+		String action = (String) paramMap.get("action");
+//		String file_name = (String) paramMap.get("file_name");
+//		String file_code =  (String) paramMap.get("file_code");
+		paramMap.put("loginID", session.getAttribute("loginId"));
+	//	paramMap.put("file_name", file_name);
+
+		if ("I".equals(action)) {
+
+				productservice.prdRegist(paramMap,request);
+				productservice.fnlRegist(paramMap);		// 회계전표 테이블 insert
+		} else if ("U".equals(action)) {
+			productservice.fileUpdate(paramMap, request);
+			productservice.prdUpdate(paramMap);
+		} 
+		
+		Map<String, Object> returnmap = new HashMap<String, Object>();
+		returnmap.put("result", "SUCCESS");
+
+		logger.info("+ End " + className + ".prdRegist");
+
+		return returnmap;
+	}
+	
+	@RequestMapping("prdSelect.do")
+	@ResponseBody
+	public  Map<String, Object> prdSelect(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		logger.info("+ Start " + className + ".prdSelect");
+		logger.info("   - paramMap : " + paramMap);
+		productModel prdSelect = productservice.prdSelect(paramMap);
+		
+		Map<String, Object> returnmap = new HashMap<String, Object> ();
+		returnmap.put("result", "SUCCESS");
+		returnmap.put("detailone", prdSelect);
+		logger.info("+ End " + className + ".prdSelect");
+		
+		return returnmap;
+	}
+
+	
+}

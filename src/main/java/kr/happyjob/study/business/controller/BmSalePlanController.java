@@ -1,0 +1,93 @@
+package kr.happyjob.study.business.controller;
+
+import java.util.List;
+
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import kr.happyjob.study.business.model.BmSalePlanModel;
+import kr.happyjob.study.business.service.BmSalePlanService;
+
+@Controller
+@RequestMapping("business")
+public class BmSalePlanController {
+	
+	@Autowired
+	BmSalePlanService planService;
+	
+	
+	// Set logger
+	private final Logger logger = LogManager.getLogger(this.getClass());
+
+	// Get class name for logger
+	private final String className = this.getClass().toString();
+	
+	@RequestMapping("bmSalePlan.do")
+	public String initBmSalePlan(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className + ".bmSalePlan");
+		logger.info("   - paramMap : " + paramMap);
+		
+		logger.info("+ End " + className + ".bmSalePlan");
+		
+		return "/business/bmSalePlan";
+	}	
+	
+	
+	/* 영업실적조회 목록 */
+	@RequestMapping("bmPlanList.do")
+	public String bmPlanList(Model model, @RequestParam Map<String, Object> paramMap, 
+			HttpServletRequest request, HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className + ".bmPlanList");
+		logger.info("   - paramMap : " + paramMap);
+		
+		int bmcpage = Integer.parseInt((String)paramMap.get("cpage"));			//현재 페이지 번호
+		int bmpageSize = Integer.parseInt((String)paramMap.get("pageSize"));	//페이지사이즈
+		int bmpageIndex = (bmcpage - 1) * bmpageSize;							//페이지 시작 row 번호
+		
+		String loginID = (String) session.getAttribute("loginId");
+		String userType = (String) session.getAttribute("userType");
+		
+		paramMap.put("MpageIndex", bmpageIndex);
+		paramMap.put("MpageSize", bmpageSize);
+		paramMap.put("loginID", loginID);
+		paramMap.put("userType", userType);
+		
+		
+		//1. 목록 리스트 조회
+		List<BmSalePlanModel> listPlan = planService.bmPlanList(paramMap);
+		model.addAttribute("bmlistPlan", listPlan);
+		
+		// 2 . 목록 리스트  카운트 조회
+		int planCnt = planService.countPlanList(paramMap);
+		model.addAttribute("bmplanCnt", planCnt);
+		
+		
+		logger.info("+ End " + className + ".bmPlanList");
+		
+		return "/business/bmSalePlanCall";
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+}

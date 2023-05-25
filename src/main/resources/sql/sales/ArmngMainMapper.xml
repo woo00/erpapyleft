@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.sales.dao.ARMDao">
+ 
+	<!-- 그룹코드 목록 조회 -->
+	<select id="listARM" resultType="kr.happyjob.study.sales.model.ARMModel">
+		
+            select est.est_code
+			      ,bz.biz_name
+			      ,(pd.sup_price*pd.addinven)+(pd.sup_price*pd.addinven/10) as psd
+			      ,est.est_odate
+			      ,dtc.detail_name as detail_name
+			      ,ui.name as sign_user
+			      ,est.est_yn
+			from tb_est est
+			    left outer join tb_biz bz on bz.biz_code = est.biz_code
+			    left outer join tb_userinfo ui on ui.loginID = est.loginID
+			    left outer join tb_product pd on pd.prd_code = est.prd_code
+			    inner join tb_detail_code dtc ON dtc.group_code = 'est_yn' and dtc.detail_code = est.est_yn
+  
+		  <where>
+			    and est.est_eo = 'o' 
+		       <if test="(from_date != null) and (!from_date.equals(''))">
+		            and est.est_odate <![CDATA[>=]]>#{from_date}  
+		       </if>
+		       <if test="(to_date != null) and (!to_date.equals(''))">
+		            and est.est_odate <![CDATA[<=]]>#{to_date}  
+		       </if>
+		       <if test="D_U eq 'Y'.toString()">
+		    		and est_yn = #{D_U}
+			    </if>
+			    <if test="D_U eq 'N'.toString()">
+		    		and est_yn = #{D_U}
+			    </if>
+		       <if test="(biz_ac != null) and (!biz_ac.equals(''))">
+		            and bz.biz_code Like CONCAT('%', #{biz_ac} ,'%')
+		       </if>	
+		   </where> 
+		  ORDER BY est.est_code DESC 
+		   LIMIT #{pageIndex}, #{pageSize}
+	</select>
+	
+    <select id="counthnoticelist" resultType="int">
+		/*kr.happy.study.sales.dao.ARMDao.counthnoticelist*/
+		   select count(*)
+			from tb_est est
+			    left outer join tb_biz bz on bz.biz_code = est.biz_code
+			    left outer join tb_userinfo ui on ui.loginID = est.loginID
+			    left outer join tb_product pd on pd.prd_code = est.prd_code
+			    inner join tb_detail_code dtc ON dtc.group_code = 'est_yn' and dtc.detail_code = est.est_yn
+		 <where>
+			    and est.est_eo = 'o' 
+		       <if test="(from_date != null) and (!from_date.equals(''))">
+		            and est.est_odate <![CDATA[>=]]>#{from_date}  
+		       </if>
+		       <if test="(to_date != null) and (!to_date.equals(''))">
+		            and est.est_odate <![CDATA[<=]]>#{to_date}  
+		       </if>
+		       <if test="D_U eq 'Y'.toString()">
+		    		and est_yn = #{D_U}
+			    </if>
+			    <if test="D_U eq 'N'.toString()">
+		    		and est_yn = #{D_U}
+			    </if>
+		       <if test="(biz_ac != null) and (!biz_ac.equals(''))">
+		            and bz.biz_code Like CONCAT('%',  #{biz_ac} ,'%')
+		       </if>	
+		   </where> 
+	</select>		
+	
+	
+	<select id="selectArm" resultType="kr.happyjob.study.sales.model.ARMModel">
+		/*kr.happyjob.study.sales.dao.ARMDao.selectarm*/
+		 select est.est_code
+			      ,bz.biz_name
+			      ,(pd.sup_price*pd.addinven)+(pd.sup_price*pd.addinven/10) as psd
+			      ,est.est_odate
+			      ,est.est_yn
+			      ,dtc.detail_name as detail_name
+			      ,ui.name as sign_user
+			      ,est.est_edate
+			      ,bz.biz_iname
+			      ,bz.biz_code
+			      ,bz.biz_phone
+			      ,bz.biz_bank
+			      ,bz.biz_ac
+		from tb_est est
+		    left outer join tb_biz bz on bz.biz_code = est.biz_code
+		    left outer join tb_userinfo ui on ui.loginID = est.loginID
+		    left outer join tb_product pd on pd.prd_code = est.prd_code
+		    inner join tb_detail_code dtc ON dtc.group_code = 'est_yn' and dtc.detail_code = est.est_yn
+		 where est.est_code = #{est_code}
+
+	</select>
+	
+	<update id="updateArm">	
+			  update tb_est
+			      set 
+		              est_yn = #{est_yn}
+			  where est_code = #{est_code} 
+			   
+	</update>
+	
+	
+	    
+	
+	
+	
+	
+</mapper>

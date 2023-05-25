@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.business.dao.productDao">
+   
+   <!-- 제품 리스트 -->
+	<select id="prdList" resultType="kr.happyjob.study.business.model.productModel">
+		SELECT pr.prd_code 
+						, pr.prd_name
+						, pr.pb_code
+						, pb.pb_name
+						, pr.ps_code
+						, ps.ps_name
+						, pr.sup_price
+						, pr.addinven
+						, pr.file_code
+							,f.abs_path
+							,f.rel_path
+							,f.size
+							,f.file_name
+		FROM tb_product pr 
+						inner join tb_pb pb
+  				ON pr.pb_code = pb.pb_code
+      					inner join tb_ps ps
+  				ON  pr.pb_code = ps.pb_code
+  						left outer join tb_file f
+  				ON pr.file_code = f.file_code
+  				<where>
+  					<if test="(pb_code != null) and (!pb_code.equals(''))">
+				    and pr.pb_code = #{pb_code}
+					</if>
+					<if test="(ps_code != null) and (!ps_code.equals(''))">
+				    and pr.ps_code = #{ps_code}
+					</if>
+					<if test="(searchKey != null) and (!searchKey.equals('') and (searchKey.equals('prdNum')))">
+				    and pr.prd_code Like CONCAT('%', #{searchWord}, '%')
+					</if>
+					<if test="(searchKey != null) and (!searchKey.equals('') and (searchKey.equals('prdName')))">
+					and pr.prd_name Like CONCAT('%', #{searchWord}, '%')
+					</if>
+  				</where>
+  		group by pr.prd_code		
+      	 ORDER BY pr.prd_code DESC	
+      	 LIMIT #{pageIndex}, #{prdPageSize}					
+	</select>
+	
+	<!-- 회계전표 INSERT -->
+	<insert id="fnlRegist" >
+		<selectKey keyProperty="fnlcode" resultType="int" order="BEFORE">
+	   	SELECT IFNULL(MAX(fnl_code),0) +1
+				  FROM tb_fnl
+		</selectKey>
+		INSERT INTO tb_fnl(
+												 fnl_price
+												,fnl_date
+												,dacc_code
+												,bacc_code
+												,fnl_code
+												,fnl_div
+												) 
+						VALUES(
+										#{sup_price}*#{addinven}
+										,DATE_FORMAT(now(),'%Y-%m-%d')
+										,108
+										,'B'
+										,#{fnlcode}
+										,( SELECT max(prd_code) FROM tb_product
+										  )
+										)
+	
+	</insert>
+	
+	<!-- 제품수 카운트 -->
+	 <select id="countListPrd" resultType="int">
+		SELECT 
+				count(*) as prd_cnt 
+		 FROM tb_product pr 
+						inner join tb_pb pb
+  				ON pr.pb_code = pb.pb_code
+      					inner join tb_ps ps
+  				ON  pr.pb_code = ps.pb_code
+  						left outer join tb_file f
+  				ON pr.file_code = f.file_code
+  		<where>
+  					<if test="(pb_code != null) and (!pb_code.equals(''))">
+				    and pr.pb_code = #{pb_code}
+					</if>
+					<if test="(ps_code != null) and (!ps_code.equals(''))">
+				    and pr.ps_code = #{ps_code}
+					</if>
+					<if test="(searchKey != null) and (!searchKey.equals('') and (searchKey.equals('prdNum')))">
+				    and pr.prd_code Like CONCAT('%', #{searchWord}, '%')
+					</if>
+					<if test="(searchKey != null) and (!searchKey.equals('') and (searchKey.equals('prdName')))">
+					and pr.prd_name Like CONCAT('%', #{searchWord}, '%')
+					</if>
+  		</where>	 	
+	</select>
+	
+	<!-- 대분류 코드 -->
+	<select id="pbList" resultType="kr.happyjob.study.business.model.productModel">
+		SELECT pb_code, pb_name
+	  	FROM tb_pb
+  	</select>
+  	
+  		<!-- A 일때 소분류 코드 -->
+	<select id="psAList" resultType="kr.happyjob.study.business.model.productModel">
+		SELECT ps.pb_code, ps.ps_code, ps.ps_name
+  		FROM tb_pb pb inner join tb_ps ps
+    			ON pb.pb_code = ps.pb_code
+    	WHERE ps.pb_code = "A"  		
+  	</select>
+  	
+  	<!-- B 일때 소분류 코드 -->
+	<select id="psBList" resultType="kr.happyjob.study.business.model.productModel">
+		SELECT ps.pb_code, ps.ps_code, ps.ps_name
+  		FROM tb_pb pb inner join tb_ps ps
+    			ON pb.pb_code = ps.pb_code
+    	WHERE ps.pb_code = "B"  		
+  	</select>
+  	
+  	<!-- C 일때 소분류 코드 -->
+	<select id="psCList" resultType="kr.happyjob.study.business.model.productModel">
+		SELECT ps.pb_code, ps.ps_code, ps.ps_name
+  		FROM tb_pb pb inner join tb_ps ps
+    			ON pb.pb_code = ps.pb_code
+    	WHERE ps.pb_code = "C"  		
+  	</select>
+  	
+  	<!-- 신규 제품 등록 -->
+  	<insert id="prdRegist">
+	 <selectKey keyProperty="prdcode" resultType="int" order="BEFORE">
+	   	SELECT IFNULL(MAX(prd_code),0) +1
+				  FROM tb_product
+		</selectKey>
+	 INSERT INTO tb_product(prd_code
+			 											,prd_name
+			 											,pb_code
+			 											,ps_code
+			 											,sup_price
+			 											,addinven
+			 											,file_code
+			 											,loginID
+			 											,minven
+	 													)
+								 	VALUES(#{prdcode}
+													 ,#{pb_name}
+													 ,#{pb_code}
+													 ,#{ps_code}
+													 ,#{sup_price}
+													 ,#{addinven}
+													 <if test="(file_name == '') and (file_name.equals(''))">
+													 , 0
+													 </if>
+													 <if test="(file_name != null) and (!file_name.equals(''))">
+													 ,(select max(file_code) from tb_file)
+													 </if>
+	 												,#{prdcode}
+	 												,#{addinven}
+	 )
+	 </insert>
+	 
+	 <!-- 파일 신규 등록  --> 
+	<insert id="fileRegist">
+	<selectKey keyProperty="filecode" resultType="int" order="BEFORE">
+	   	SELECT IFNULL(MAX(file_code),0) +1
+				  FROM tb_file
+		</selectKey>
+	INSERT INTO tb_file
+		
+							(
+								file_code
+								,abs_path
+								,rel_path
+								,file_name
+								,size
+							) VALUES (
+								 #{filecode}	
+								 ,#{file_madd}
+								 ,#{file_nadd}
+								 ,#{file_name}
+								 ,#{file_size}
+							)
+	</insert>
+	
+	<!-- 상품 단건 조회 -->
+	<select id="prdSelect" resultType="kr.happyjob.study.business.model.productModel">
+		SELECT 
+						pr.prd_code 
+						, pr.prd_name
+						, pr.pb_code
+						, pb.pb_name
+						, pr.ps_code
+						, ps.ps_name
+						, pr.sup_price
+						, pr.addinven
+						, pr.file_code
+							,f.abs_path
+							,f.rel_path
+							,f.size
+							,f.file_name
+		FROM 
+		tb_product pr 
+						inner join tb_pb pb
+  				ON pr.pb_code = pb.pb_code
+      					inner join tb_ps ps
+  				ON  pr.pb_code = ps.pb_code
+  						left outer join tb_file f
+  				ON pr.file_code = f.file_code		  	
+		WHERE pr.prd_code = #{prd_code}
+	</select>
+	
+	<!-- 상품 수정 -->
+	<update id="prdUpdate">
+		UPDATE tb_product 
+					SET 	prd_name = #{pb_name}
+							   ,addinven = #{addinven}
+							   ,pb_code = #{pb_code}
+							   ,ps_code = #{ps_code}
+							   ,sup_price = #{sup_price}
+							   ,minven = #{addinven}
+		WHERE  prd_code = #{prd_code}
+	</update>
+	
+	<!-- 파일 수정 -->
+	<update id="fileUpdate">
+		UPDATE tb_file 
+					SET 	abs_path = #{file_madd}
+								,rel_path = #{file_nadd}
+								,file_name = #{file_name}
+								,size = #{file_size}
+		WHERE  file_code = #{file_code}
+	</update>
+
+</mapper>

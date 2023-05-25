@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.accounting.dao.AccTitleDao">
+
+	<!-- 계정 과목 목록 조회 -->
+	<select id="listAccTitle" resultType="kr.happyjob.study.accounting.model.AccTitleModel">
+		select bac.bacc_code	
+			  ,bac.bacc_name 
+			  ,dac.dacc_code 
+			  ,dac.dacc_name 
+		  	  ,dtc.detail_name as detail_name
+		      ,dac.dacc_detail
+			  ,dac.use_yn 
+		from tb_dacc dac
+				inner join tb_bacc bac on bac.bacc_code = dac.bacc_code
+			 	inner join tb_detail_code dtc ON dtc.group_code = 'dacc_div' and dtc.detail_code =  dac.dacc_div
+		 <where>
+		 	<if test="(bacc_code != null) and (!bacc_code.equals(''))">
+		            and bac.bacc_code = #{bacc_code}
+		    </if>
+		    <if test="(dacc_code != null) and (!dacc_code.equals(''))">
+		            and dac.dacc_code = #{dacc_code}
+		    </if>
+		    <if test="(S_daccT != null) and (!S_daccT.equals(''))">
+		            and dac.use_yn = #{S_daccT}
+		    </if>
+		    <if test="R_F eq '1'.toString()">
+		    		and dacc_div = #{R_F}
+		    </if>
+		    <if test="R_F eq '2'.toString()">
+		    		and dacc_div = #{R_F}
+		    </if>
+		 </where>
+		 ORDER BY bac.bacc_code DESC
+   		LIMIT #{pageIndex}, #{pageSize}
+		
+	</select>
+	
+    <select id="counthnoticelist" resultType="int">
+		  select count(dac.dacc_code)
+		   from tb_dacc dac
+		   		inner join tb_bacc bac on bac.bacc_code = dac.bacc_code
+		   		inner join tb_detail_code dtc ON dtc.group_code = 'dacc_div' and dtc.detail_code =  dac.dacc_div
+		<where>
+		 	<if test="(bacc_code != null) and (!bacc_code.equals(''))">
+		            and bac.bacc_code = #{bacc_code}
+		    </if>
+		    <if test="(dacc_code != null) and (!dacc_code.equals(''))">
+		            and dac.dacc_code = #{dacc_code}
+		    </if>
+<!-- 		    <if test="(R_F != null) and (!R_F.equals(''))"> -->
+<!-- 		            and detail_name = #{R_F} -->
+<!-- 		    </if> -->
+		    <if test="(S_daccT != null) and (!S_daccT.equals(''))">
+		            and dac.use_yn = #{S_daccT}
+		    </if>
+		    <if test="R_F eq '1'.toString()">
+		    		and dacc_div = #{R_F}
+		    </if>
+		    <if test="R_F eq '2'.toString()">
+		    		and dacc_div = #{R_F}
+		    </if>
+		 </where>
+	</select>		
+	
+	<select id="selectAccTitle" resultType="kr.happyjob.study.accounting.model.AccTitleModel">
+         select bac.bacc_name 
+         	 ,bac.bacc_code
+         	 ,dac.dacc_code
+		     ,dac.dacc_name
+		     ,dtc.detail_name as detail_name
+		     ,dac.dacc_detail
+		     ,dac.use_yn
+			 ,dac.dacc_div
+		 from tb_dacc dac
+		 inner join tb_bacc bac on bac.bacc_code = dac.bacc_code
+		 inner join tb_detail_code dtc ON dtc.group_code = 'dacc_div' and dtc.detail_code =  dac.dacc_div
+		 where dac.dacc_code = #{dacc_code} and dac.bacc_code = #{bacc_code}
+	</select>
+	
+	
+	<insert id="saveAccTitle">
+	<selectKey resultType="int" keyProperty="dacccode" order="BEFORE">
+            select ifnull(max(dacc_code),0) + 1 from tb_dacc where bacc_code = #{bacc_code} 
+         </selectKey> 
+	   	  insert INTO tb_dacc
+		   	  (bacc_code
+		   	  ,dacc_name
+		   	  ,dacc_detail
+		   	  ,dacc_div
+		   	  ,dacc_code
+		   	  ,use_yn )
+   	  		  VALUES 
+   	  		  (
+   	  		  #{bacc_code}
+   	  		  ,#{dacc_name}
+   	  		  ,#{dacc_detail}
+   	  		  ,#{dacc_div}
+   	  		  ,#{dacccode}
+   	  		  ,'Y'
+              )
+	</insert>
+	
+	<update id="updateAccTitle">	
+			  update tb_dacc
+			      set 
+		              dacc_name = #{dacc_name}
+		              , dacc_detail = #{dacc_detail}
+		              , use_yn = #{use_yn}
+		              , dacc_div = #{dacc_div}
+			  where dacc_code = #{dacc_code} 
+			  and bacc_code = #{bacc_code}
+			   
+	</update>
+	
+	<delete id="deleteAccTitle">
+		 delete from tb_dacc
+	       where dacc_code = #{dacc_code}
+	</delete>
+	
+</mapper>

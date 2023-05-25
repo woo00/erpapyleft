@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.sales.dao.IddRevenueDao">
+<!-- <![CDATA[>]]> 사용 -->
+
+	<!-- 검색날짜 매출 목록 총 갯수 조회 -->	
+	<select id="countListddRevenue" resultType="int">
+		SELECT  COUNT(*)
+		 
+		FROM  tb_est est
+		INNER JOIN tb_biz biz ON est.biz_code = biz.biz_code
+		INNER JOIN tb_product prd ON est.prd_code = prd.prd_code
+		WHERE est.est_odate = #{searchDate}
+		AND est.est_yn= 'Y'
+		<if test="searchKey!=null and !searchKey.equals('')">
+			AND est.biz_code = #{searchKey}
+		</if>
+		LIMIT #{pageIndex}, #{pageSize}     	   
+	</select>
+	
+	<!-- 검색날짜 매출 목록 조회 -->
+	<select id="listDSales" resultType="kr.happyjob.study.sales.model.SalesModel">
+		SELECT  DATE_FORMAT(est.est_odate,'%Y-%m-%d') AS est_odate<!-- 주문일자 -->,
+		        est.biz_code  <!-- 거래처코드 -->,
+		        biz.biz_name  <!-- 거래처명 -->,
+		        prd.prd_name  <!-- 항목명 -->,
+		        est.est_ocnt  <!-- 수량 -->,
+		        (prd.sup_price)+(prd.sup_price/10) AS sup_price<!-- 단가 -->,
+		        prd.sup_price  AS sppl<!-- 공급가액 -->,
+		        prd.sup_price/10 AS tax<!-- 부가세 -->,
+		        ((prd.sup_price)+(prd.sup_price/10))*est.est_ocnt AS pay_price<!-- 합계 -->
+		        
+		
+		 
+		FROM  tb_est est
+		INNER JOIN tb_biz biz ON est.biz_code = biz.biz_code
+		INNER JOIN tb_product prd ON est.prd_code = prd.prd_code
+		WHERE est.est_odate = #{searchDate}
+		AND est.est_yn= 'Y'
+		<if test="searchKey!=null and !searchKey.equals('')">
+			AND est.biz_code = #{searchKey}
+		</if>
+		LIMIT #{pageIndex}, #{pageSize}
+ 
+	</select>	
+	<!-- 검색날짜 손익통계 -->
+	<select id="listDaySalesSum" resultType="kr.happyjob.study.sales.model.SalesModel">
+	 
+	SELECT 	order_date
+			,sum_sales
+			,sum_ar 
+			,sum_cost 
+			,sum_sales-sum_cost AS margin 
+			,round((sum_sales-sum_cost)/sum_sales*100,2) AS salesProfit_rate 
+	       
+	FROM 	(
+				SELECT 	DATE_FORMAT(est.est_odate,'%Y-%m-%d') AS order_date  
+            ,(
+               	SELECT  SUM( ((prd.sup_price)+(prd.sup_price/10))*est.est_ocnt)
+                     
+				FROM   tb_est est
+				 
+				INNER JOIN tb_product prd ON est.prd_code = prd.prd_code
+				
+				WHERE 	DATE_FORMAT(est_odate,'%Y-%m-%d')= #{searchDate}
+				AND  est_yn ='Y'
+				
+				GROUP BY DATE_FORMAT(est_odate,'%Y-%m-%d')
+              ) AS 'sum_sales' 
+            ,IFNULL((
+                     SELECT SUM(prd.sup_price*est.est_ocnt)
+                     
+                     FROM   tb_est est
+                     
+                     INNER JOIN tb_product prd ON est.prd_code = prd.prd_code
+                     
+                     WHERE 	DATE_FORMAT(est_odate,'%Y-%m-%d')=#{searchDate}
+                     AND  est_yn ='Y'
+                     
+                     GROUP BY DATE_FORMAT(est_odate,'%Y-%m-%d')
+                     ),0) AS 'sum_cost' 
+            ,IFNULL((
+						SELECT 	SUM(((prd.sup_price)+(prd.sup_price/10))*est.est_ocnt)
+						     
+						FROM 	tb_est est
+						
+       					INNER JOIN tb_product prd ON est.prd_code = prd.prd_code
+						         
+						WHERE est_yn ='N'
+						
+						AND DATE_FORMAT(est_odate,'%Y-%m-%d')=#{searchDate}
+						
+						GROUP BY DATE_FORMAT(est_odate,'%Y-%m-%d')
+					 ),0) AS sum_ar 
+               
+  			FROM tb_est est
+              
+  			WHERE date_format(est.est_odate,'%Y-%m-%d')=#{searchDate}
+  		
+  			GROUP BY DATE_FORMAT(est.est_odate,'%Y-%m-%d')
+  		) dsum	
+	
+
+	
+	</select>
+	
+	
+<!-- 검색날짜 기준 한달간 매출 시각화 -->
+	<select id="listDaySalesChart" resultType="kr.happyjob.study.sales.model.SalesModel">
+		SET @va=0;
+		SELECT DATE_FORMAT(est_odate,'%Y-%m-%d') AS order_date  
+		       ,s.sum_sales/100000 AS sum_sales
+		       ,(@va:=@va+s.sum_sales)/100000 AS cumsum_sales  
+     FROM (
+                     SELECT est_odate,  SUM( ((prd.sup_price)+(prd.sup_price/10))*est.est_ocnt) sum_sales
+                           
+                     FROM   tb_est est
+                      
+                     INNER JOIN tb_product prd ON est.prd_code = prd.prd_code
+                     
+                     WHERE  est_yn ='Y'
+                     
+                     GROUP BY DATE_FORMAT(est_odate,'%Y-%m-%d')
+                    ) s
+      WHERE DATE_FORMAT(est_odate,'%Y-%m-%d') BETWEEN #{oneMonthAgo} AND #{searchDate}
+      GROUP BY est_odate
+      ORDER BY est_odate
+
+		        
+	</select>
+	
+	
+</mapper>

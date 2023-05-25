@@ -1,0 +1,139 @@
+package kr.happyjob.study.business.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import kr.happyjob.study.business.model.EmpSalePlanModel;
+import kr.happyjob.study.business.service.EmpSalePlanService;
+
+@Controller
+@RequestMapping("business")
+public class EmpSalePlanController {
+	
+	@Autowired
+	EmpSalePlanService planService;
+	
+	// Set logger
+	private final Logger logger = LogManager.getLogger(this.getClass());
+
+	// Get class name for logger
+	private final String className = this.getClass().toString();
+	
+	@RequestMapping("empSalePlan.do")
+	public String initEmpSalePlan(Model model, @RequestParam Map<String, Object> paramMap) throws Exception {
+		logger.info("+ Start " + className + ".empSalePlan");
+		logger.info("   - paramMap : " + paramMap);
+		logger.info("+ End " + className + ".empSalePlan");
+		
+		return "business/EmpSalePlan";
+	}	
+	
+	/*영업계획 목록 조회*/
+	@RequestMapping("planList.do")
+	public String salePlanList(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className + ".planList");
+		logger.info("   - paramMap : " + paramMap);
+		
+		int pageSize456 = Integer.parseInt((String) paramMap.get("pageSize123"));
+		int cpage = Integer.parseInt((String) paramMap.get("cpage"));
+		int pageindex = (cpage - 1) * pageSize456;	// (1-1) * 10 = 0, (2-1)*10=10, (3-1)*10=20
+		
+		paramMap.put("pageindex", pageindex);
+		paramMap.put("pageSize111", pageSize456);
+		
+		System.out.println(" pageindex :    " + pageindex);
+		System.out.println(" pageSize456 :    " + pageSize456);
+		
+		
+		// 1 . 목록 리스트 조회 
+		List<EmpSalePlanModel> listPlan = planService.planList(paramMap);
+		model.addAttribute("listPlan123", listPlan);
+		
+		// 2 . 목록 리스트  카운트 조회
+		int planCnt = planService.planCnt(paramMap);
+		model.addAttribute("planCnt", planCnt);
+		
+		
+		logger.info("+ End " + className + ".planList");
+		
+		return "business/EmpSalePlanCallBack";
+	}	
+	
+	
+	/*단건 조회*/
+	@RequestMapping("planListSelect.do")
+	@ResponseBody
+	public Map<String, Object> planListSelect(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+ 			HttpServletResponse response, HttpSession session) throws Exception{
+		
+		logger.info("+ Start " + className + ".planListSelect");
+		logger.info("   - paramMap : " + paramMap);
+		
+		String nowLogin = (String)session.getAttribute("loginId");
+		
+		EmpSalePlanModel detailone = planService.planListSelect(paramMap);
+		
+		
+		Map<String, Object> returnmap = new HashMap<String, Object>();
+		
+		returnmap.put("result", "SUCCESS");			//컨트롤러 탔으니 성공 메세지 화면단으로 보냄
+		returnmap.put("detailone123", detailone);	//단건 조회 목록
+		returnmap.put("nowLogin", nowLogin);		//현재 사용자 로그인 아이디
+		
+		logger.info("+ End " + className + ".planListSelect");
+		
+		return returnmap;
+	}
+	
+	/* 신규거래처 등록 및 기존거래처 수정, 삭제 */
+	@RequestMapping("savePlanList.do")
+	@ResponseBody
+	public Map<String, Object> savePlanList(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+ 			HttpServletResponse response, HttpSession session) throws Exception{
+		
+		logger.info("+ Start " + className + ".savePlanList");
+		logger.info("   - paramMap : " + paramMap);
+
+		paramMap.put("loginId", (String)session.getAttribute("loginId"));
+		
+		
+		String action = (String)paramMap.get("action");
+		
+		if ("I".equals(action)) {
+			planService.insertPlanList(paramMap);
+		} else if ("U".equals(action)) {
+			planService.updatePlanList(paramMap);
+		} else if ("D".equals(action)) {
+			planService.deletePlanList(paramMap);
+		}
+		
+		Map<String, Object> returnmap = new HashMap<String, Object>();
+		
+		returnmap.put("result", "SUCCESS");
+		
+		
+		logger.info("+ End " + className + ".savePlanList");
+		
+		return returnmap;
+	}
+	
+	
+	
+	
+}

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.sales.dao.ImmRevenueDao">
+<!-- <![CDATA[>]]> 사용 -->
+	
+	<!-- 사용자 기간 입력
+		월별 매출,매출원가,매출총이익,영업비영,영업이익,영업이익률 조회 및 시각화-->
+	<select id="listMSalesUI" resultType="kr.happyjob.study.sales.model.SalesModel">
+	
+		SELECT 	stddate.stdate AS est_odate,
+				datalist.cnt AS orderCnt,
+		      	datalist.saleamt AS sum_cost,
+		      	datalist.mar AS tax,
+		      	datalist.saleamt + datalist.mar AS margin
+	  	FROM 	(   
+			         SELECT #{fromDate} stdate
+			         UNION
+			         SELECT LEFT(DATE_ADD(CONCAT(#{fromDate},'-01'), INTERVAL 1 MONTH),7)  stdate
+			         UNION
+			         SELECT LEFT(DATE_ADD(CONCAT(#{fromDate},'-01'), INTERVAL 2 MONTH),7)  stdate 
+			         UNION
+			         SELECT LEFT(DATE_ADD(CONCAT(#{fromDate},'-01'), INTERVAL 3 MONTH),7)  stdate
+			         UNION
+			         SELECT LEFT(DATE_ADD(CONCAT(#{fromDate},'-01'), INTERVAL 4 MONTH),7)  stdate 
+			         UNION
+			         SELECT LEFT(DATE_ADD(CONCAT(#{fromDate},'-01'), INTERVAL 5 MONTH),7)  stdate 
+		       	) stddate
+		       LEFT OUTER JOIN (
+		                          SELECT LEFT(est.est_odate,7) datadt
+		                                ,COUNT(*) AS cnt
+		                                ,SUM(pr.sup_price*est_ocnt) AS saleamt     <!-- 판매금액 -->
+		                                ,ROUND(sum(pr.sup_price*est_ocnt) / 10) AS mar   <!--영업이익, 영업비 -->
+		                            FROM tb_est est
+		                                 inner join tb_product pr on pr.prd_code = est.prd_code
+		                           WHERE est.est_odate IS NOT NULL 
+		                             AND est.est_odate <![CDATA[>=]]> CONCAT(#{fromDate},'-01')
+		                             AND est.est_odate <![CDATA[<=]]> CONCAT(#{toDate},'-',DATE_FORMAT(LAST_DAY(CONCAT(#{toDate},'-01')),'%d'))
+		                          GROUP BY LEFT(est.est_odate,7)    
+		
+		                     ) datalist ON datalist.datadt = stddate.stdate
+					
+	</select>
+	
+</mapper>

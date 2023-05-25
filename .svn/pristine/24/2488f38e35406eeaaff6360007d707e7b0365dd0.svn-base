@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+
+<!-- 맵퍼네임 -->
+<mapper namespace="kr.happyjob.study.business.dao.BizPartnerDao">
+
+<!--  목록 조회 -->
+	<select id="clientList" resultType="kr.happyjob.study.business.model.BizPartnerModel" >
+		select  biz_code,
+				biz_name,
+				biz_hp,
+				biz_iname,
+				biz_phone,
+				biz_zip,
+				biz_addr,
+				biz_daddr,
+				biz_email,
+				biz_category,
+				biz_number,
+				biz_bank,
+				biz_ac,
+				biz_memo
+			from tb_biz	
+		  <where>    
+               <if test="(bizname != null) and (!bizname.equals('')) ">
+                   and biz_code = #{bizname}  
+               </if>                                                   
+          </where>  
+    	ORDER BY biz_code DESC	
+		LIMIT #{pageindex}, #{pageSize}
+	</select>
+
+	<!-- 전체 목록 카운트  -->
+	<select id="clientCnt" resultType="int"  parameterType="hashmap">
+	 <!-- 검색 및 전체 목록 뿌릴때의 카운트, cliCnt -->
+		SELECT COUNT(*)
+		 FROM tb_biz	
+		  <where>    
+               <if test="(bizname != null) and (!bizname.equals('')) ">
+                   and biz_code = #{bizname}  
+               </if>                                                   
+          </where>  
+	</select>
+<!-- 단건조회  -->
+	<select id ="seClientList"  resultType ="kr.happyjob.study.business.model.BizPartnerModel" >
+
+		select  biz_code,
+				biz_name,
+				biz_hp,
+				biz_iname,
+				biz_phone,
+				biz_zip,
+				biz_addr,
+				biz_daddr,
+				biz_email,
+				biz_category,
+				biz_number,
+				biz_bank,
+				biz_ac,
+				biz_memo
+			from tb_biz	
+			   where biz_code = #{biz_code} 
+	</select>	
+	
+	
+		<!-- 신규등록  => 시퀀스 : selectKey -->
+	<insert id="insertClientList" >
+
+        <selectKey resultType="string" keyProperty="biz_code" order="BEFORE">
+            SELECT ifnull(count(biz_code),0) + 1 from tb_biz
+        </selectKey> 
+
+		INSERT INTO tb_biz
+		(
+				biz_code,
+				biz_name,
+				biz_hp,
+				biz_iname,
+				biz_phone,
+					biz_zip,
+					biz_addr,
+					biz_daddr,
+					biz_email,
+					biz_category,
+				biz_number,
+				biz_bank,
+				biz_ac,
+				biz_memo
+	
+			)
+		VALUES
+		(
+				#{biz_code}
+				,#{biz_name}
+				,#{biz_hp}
+				,#{biz_iname}
+				,#{biz_phone}
+				,#{biz_zip}
+		         ,#{biz_addr}
+		         ,#{biz_daddr} 
+		         ,#{biz_email}
+		         ,#{biz_category}
+		         ,#{biz_number}
+		          ,#{biz_bank}
+		          ,#{biz_ac}
+		          ,#{biz_memo}
+
+		     )		
+	</insert>
+	
+	<!-- 단건수정 -->
+	<update id="updateClientList" >
+
+		UPDATE tb_biz 
+			SET  
+				biz_name=#{biz_name}
+				,biz_hp=#{biz_hp}
+				,biz_iname = #{biz_iname}
+				,biz_phone = #{biz_phone}
+				,biz_zip = #{biz_zip}
+				,biz_addr = #{biz_addr}
+				,biz_daddr = #{biz_daddr}
+				,biz_email = #{biz_email}
+				,biz_category = #{biz_category}
+				,biz_number = #{biz_number}
+				,biz_bank = #{biz_bank}
+				,biz_ac = #{biz_ac}
+				,biz_memo = #{biz_memo}
+		where  biz_code = #{biz_code}
+
+	</update>
+	
+	<!-- 단건삭제 -->
+	<delete id="deleteClientList">
+		DELETE FROM tb_biz WHERE biz_code = #{biz_code}
+	</delete>
+	
+	
+	
+
+
+</mapper>

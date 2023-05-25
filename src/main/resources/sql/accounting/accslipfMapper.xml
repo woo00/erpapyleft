@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.accounting.dao.AccSlipFDao">
+
+	<!-- 회계전표 목록 조회 -->
+	<select id="accslipflist" resultType="kr.happyjob.study.accounting.model.AccSlipFModel">
+SELECT distinct
+        tf.fnl_code,
+        tf.bacc_code,
+        tb.bacc_name,
+   if(td.dacc_div = '1',  tf.fnl_price,0) as dv_ep,
+        if(td.dacc_div = '2',  tf.fnl_price,0) as dv_fee
+FROM   tb_fnl tf
+   INNER JOIN tb_bacc tb ON tf.bacc_code = tb.bacc_code
+       INNER JOIN tb_dacc td ON tb.bacc_code = td.bacc_code AND td.dacc_code = tf.dacc_code
+	<where>    
+               <if test="(bizname != null) and (!bizname.equals('')) ">
+                    and bz.biz_code = #{bizname}
+               </if>   
+               <if test="(baccname != null) and (!baccname.equals('')) ">
+                    and tb.bacc_code  = #{baccname}
+               </if>                                             
+          </where>  
+    	order by tf.fnl_code desc 
+		LIMIT #{pageindex}, #{pageSize}
+		
+	</select>
+	
+	<!-- 회계전표 목록 카운트 조회 -->
+	<select id="countaccslipflist" resultType="int">
+	SELECT count(*)
+FROM   tb_fnl tf
+   INNER JOIN tb_bacc tb ON tf.bacc_code = tb.bacc_code
+       INNER JOIN tb_dacc td ON tb.bacc_code = td.bacc_code AND td.dacc_code = tf.dacc_code
+       	<where>    
+               <if test="(bizname != null) and (!bizname.equals('')) ">
+                    and bz.biz_code = #{bizname}
+               </if>   
+               <if test="(baccname != null) and (!baccname.equals('')) ">
+                    and tb.bacc_code  = #{baccname}
+               </if>                                             
+          </where>  
+
+
+</select>
+
+	<!-- 회계전표리스트 모달창 -->
+	<select id="accslipfmodal" resultType="kr.happyjob.study.accounting.model.AccSlipFModel">
+SELECT distinct
+        tf.fnl_code,
+        tf.bacc_code,
+        tb.bacc_name,
+   if(td.dacc_div = '1',  tf.fnl_price,0) as dv_ep,
+        if(td.dacc_div = '2',  tf.fnl_price,0) as dv_fee
+FROM   tb_fnl tf
+   INNER JOIN tb_bacc tb ON tf.bacc_code = tb.bacc_code
+       INNER JOIN tb_dacc td ON tb.bacc_code = td.bacc_code AND td.dacc_code = tf.dacc_code
+	<where>    
+               <if test="(bizname != null) and (!bizname.equals('')) ">
+                    and bz.biz_code = #{bizname}
+               </if>   
+               <if test="(baccname != null) and (!baccname.equals('')) ">
+                    and tb.bacc_code  = #{baccname}
+               </if>                                             
+          </where>  
+    	order by tf.fnl_code desc 
+		</select>
+	
+</mapper>

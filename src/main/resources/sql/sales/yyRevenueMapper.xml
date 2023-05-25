@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.sales.dao.IyyRevenueDao">
+<!-- <![CDATA[>]]> 사용 -->
+
+	<!-- 사용자 기간 입력
+	년도별 손익통계 조회 -->	
+	<select id="listYSalesUI" resultType="kr.happyjob.study.sales.model.SalesModel">
+		SET @prev_sales:=0;
+		SET @prev_profit:=0;
+		SELECT est_odate
+				,orderCnt 
+		       ,ROUND(100 * CASE @prev_sales WHEN 0 THEN 0 ELSE (sum_sales - @prev_sales) / ABS(@prev_sales) END,0) as sales_growth  <!-- /*전년대비 매출 성장률 */ -->
+		       ,ROUND(100 * CASE @prev_profit WHEN 0 THEN 0  ELSE (net_profit - @prev_profit) / ABS(@prev_profit) END,0) AS profit_growth <!-- /*전년대비 순이익 성장률*/ -->
+		       ,(@prev_sales := sum_sales) AS sum_sales    <!-- /*매출*/ -->
+		       ,(@prev_profit := net_profit) AS net_profit <!-- /*당기순이익*/ -->
+		FROM (
+		      SELECT  est_odate
+		      		,orderCnt 
+		             ,sum_sales-sum_cost AS net_profit
+		             ,sum_sales 
+		             
+		      FROM  (
+		              SELECT  DATE_FORMAT(est_odate,'%Y') AS est_odate
+		              			,COUNT(*) AS orderCnt	  
+		                      ,IFNULL(SUM((prd.sup_price*est.est_ocnt)+(prd.sup_price*est.est_ocnt))/10,0) AS sum_sales <!-- /*매출*/ -->
+		                      ,IFNULL(SUM(prd.sup_price*est.est_ocnt),0) AS sum_cost <!-- /*매출원가*/ -->
+		              FROM tb_est est
+		              INNER JOIN tb_product prd ON est.prd_code = prd.prd_code
+		              GROUP BY LEFT(est.est_odate,4)
+		              HAVING est_odate BETWEEN #{fromDate} AND #{toDate}
+		             ) temp
+		      ORDER BY est_odate
+		      ) ysum
+
+	</select>
+	
+	<!-- 년도별매출현황(상하반기) 차트
+		년도별 온라인/오프라인 주문건수,매출,영업이익,영업이익률-->
+	<select id="listYSalesHalf" resultType="kr.happyjob.study.sales.model.SalesModel">
+		SELECT 	est_odate  
+		       	,orderCnt
+		      	,sum_sales
+		       	,sum_cost
+	      	 	,ROUND(sum_cost/sum_sales*100,2) AS salesProfit_rate 
+		FROM 	(
+		          	SELECT 	date_form AS est_odate 
+		                 	,SUM(orderCnt) AS orderCnt 
+		                 	,SUM(sum_sales) AS sum_sales 
+		                 	,SUM(sum_sales-sum_cost) AS sum_cost  
+					FROM 	(
+		                  		SELECT 	DATE_FORMAT(est.est_odate,'%Y-%m') AS est_odate  
+		                         		,CONCAT(DATE_FORMAT(est.est_odate,'%Y '),IF(QUARTER(est.est_odate) IN (1,2),'상반기','하반기')) as date_form
+		                         		,COUNT(*) AS orderCnt
+		                         		,IFNULL((SUM((prd.sup_price*est.est_ocnt)+(prd.sup_price*est.est_ocnt)/10)),0) AS sum_sales  
+ 		                         		,IFNULL(SUM(prd.sup_price*est.est_ocnt),0) AS sum_cost  
+                    			FROM tb_est est 
+								INNER JOIN tb_product prd ON prd.prd_code = est.prd_code
+								
+	                   			WHERE DATE_FORMAT(est.est_odate,'%Y') BETWEEN #{fromDate} AND #{toDate}
+		                   		GROUP BY est.est_odate
+		                  	) temp
+		          	GROUP BY date_form
+		        ) msum
+	
+	</select>
+	
+	<!-- 년도매출현황(1-4분기) 차트
+		년도 온라인/오프라인 주문건수,매출,영업이익,영업이익률-->
+ 	<select id="listYSalesQuart" resultType="kr.happyjob.study.sales.model.SalesModel"> 
+ 		SELECT date_form AS est_odate   
+ 		       ,SUM(orderCnt) AS orderCnt   
+ 		       ,SUM(sum_sales) AS sum_sales
+ 		       ,SUM(sum_sales-sum_cost) AS sum_cost  
+ 		       ,ROUND(SUM(sum_sales-sum_cost)/SUM(sum_sales)*100,0) AS salesProfit_rate 
+ 		  FROM  ( 
+ 		          SELECT DATE_FORMAT(est.est_odate,'%Y-%m') AS order_date   
+ 		               ,CONCAT(SUBSTRING(DATE_FORMAT(est.est_odate,'%Y '),3,2),'년도 ',QUARTER(est.est_odate),'분기') AS date_form 
+		               ,COUNT(*) AS orderCnt  
+ 		               ,IFNULL((SUM((prd.sup_price*est.est_ocnt)+(prd.sup_price*est.est_ocnt)/10)),0) AS sum_sales  
+ 		               ,IFNULL(SUM(prd.sup_price*est.est_ocnt),0) AS sum_cost  
+ 		          FROM tb_est est
+              INNER JOIN tb_product prd ON prd.prd_code = est.prd_code
+ 		          WHERE DATE_FORMAT(est.est_odate,'%Y') BETWEEN #{fromDate} AND #{toDate} 
+					
+ 		          GROUP BY DATE_FORMAT(est.est_odate,'%Y-%m') 
+ 		        ) msum 
+ 		GROUP BY date_form       
+ 		ORDER BY date_form 
+
+
+	</select>
+	
+
+</mapper>

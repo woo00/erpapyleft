@@ -1,0 +1,28 @@
+package kr.happyjob.study.business.service;
+
+import java.util.List;
+import java.util.Map;
+
+import kr.happyjob.study.business.model.EstManagementModel;
+
+public interface EstManagementService {
+
+	List<EstManagementModel> listpage(Map<String, Object> paramMap);
+
+	int countlistpage(Map<String, Object> paramMap);
+
+	/** 견적서 저장 */
+	public int estnewsave(Map<String, Object> paramMap) throws Exception;
+	
+	/** 견적서 수정 */
+	public int estnewupdate(Map<String, Object> paramMap) throws Exception;
+	
+	/** 견적서 삭제 */
+	public int estnewdelete(Map<String, Object> paramMap) throws Exception;
+
+	/** 리스트 목록 단건 조회 */
+	public EstManagementModel estManagementSelect(Map<String, Object> paramMap);
+
+	
+
+}

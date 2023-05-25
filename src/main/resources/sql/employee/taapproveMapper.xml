@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.employee.dao.taapproveDao">
+	<!-- 년차 구하기 -->
+	<select id="getLeave_date" resultType="int">
+		SELECT 
+			timestampdiff(YEAR, regdate, date_format(now(),'%Y-%m-%d'))
+		FROM 
+			tb_userinfo
+		WHERE 
+			loginID = #{loginID}
+	</select>
+	
+	<!-- 사용 연차 구하기 -->
+	<select id="getUse_leave" resultType="int">
+		SELECT 
+			sum(TIMESTAMPDIFF(day,st_date,ed_date)+1) rleave
+		FROM 
+			tb_va 
+		WHERE 
+			loginID = #{loginID} and sign_yn='Y';
+	</select>
+	
+	<!-- 유저 기본 정보 구하기 -->
+	<select id="getUser_detail" resultType="kr.happyjob.study.employee.model.taapproveModel">
+		SELECT
+			dc.detail_name dept_name
+           ,ui.name use_loginID
+        FROM 
+        	tb_userinfo ui
+        INNER 
+        	JOIN tb_detail_code dc ON dc.group_code='dep_code' and dc.detail_code = ui.dep_code
+        WHERE 
+        	ui.loginID = #{loginID}
+	</select>
+	
+	<!-- 휴가 리스트 -->
+	<select id="valist" resultType="kr.happyjob.study.employee.model.taapproveModel">
+		SELECT  
+				tv.va_code
+		      , dc.detail_name va_name
+		      , tv.st_date
+		      , tv.ed_date
+		      , TIMESTAMPDIFF(day,st_date,ed_date)+1 use_date
+		      , ui.name use_loginID
+		      , dc2.detail_name va_state
+		FROM 
+			tb_va tv
+		INNER JOIN 
+			tb_detail_code dc ON dc.group_code = 'va_div' and dc.detail_code = tv.va_div
+		INNER JOIN 
+			tb_userinfo ui ON ui.loginID = tv.sign_user
+		INNER JOIN 
+			tb_detail_code dc2 ON dc2.group_code = 'sign_yn' and dc2.detail_code = tv.sign_yn
+		WHERE
+			 tv.loginID = #{loginID}
+			 
+		ORDER BY
+			tv.va_code
+		LIMIT
+			#{startPage},#{pageSize}
+	</select>
+	
+	<!-- 휴가 총 개수 -->
+	<select id="vacnt" resultType="int">
+		SELECT  
+			count(*)
+		FROM 
+			tb_va tv
+		INNER JOIN 
+			tb_detail_code dc ON dc.group_code = 'va_div' and dc.detail_code = tv.va_div
+		INNER JOIN 
+			tb_userinfo ui ON ui.loginID = tv.sign_user
+		INNER JOIN 
+			tb_detail_code dc2 ON dc2.group_code = 'sign_yn' and dc2.detail_code = tv.sign_yn
+	</select>
+	
+	<!-- 휴가 신청 단건 조회 -->
+	<select id="vadetail" resultType="kr.happyjob.study.employee.model.taapproveModel">
+	
+	</select>
+</mapper>

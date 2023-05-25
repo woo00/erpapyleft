@@ -1,0 +1,385 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<title>Job Korea :: 급여 관리</title>
+
+<!-- sweet alert import -->
+<script src='${CTX_PATH}/js/sweetalert/sweetalert.min.js'></script>
+<!-- 공통 js/css src 모은 jsp -->
+<jsp:include page="/WEB-INF/view/common/common_include.jsp"></jsp:include>
+
+<script type="text/javascript">
+
+	var pageSizePay = 2;
+	var pageBlockSizePay = 5;
+
+	var currentPagePay = 1;
+	
+	var pageSizeDetail = 2;
+	var pageBlockSizeDetail = 5;
+	
+	var sloginID;
+	
+	$(function() {
+		
+		comcombo('dep_code', 'searchKey_dept', 'all', '');
+		comcombo('grade_code', 'searchKey_poscd', 'all', '');
+		
+		const sal_date = fn_getSalDate();
+		$('#sal_date').val(sal_date);
+		
+		fn_paymentlist();
+	});
+	
+	function fn_getSalDate() {
+		const d = new Date();
+		const date = d.getDate();
+		if(date < 10) {
+			return new Date(d.getFullYear(), d.getMonth() - 1, 1).toJSON().slice(0, 7);
+		}
+		else {
+			return new Date(d.getFullYear(), d.getMonth(), 1).toJSON().slice(0, 7);
+		}
+	}
+	
+	// 급여 지급 내역 조회
+	function fn_paymentlist(currentPage) {
+		
+		currentPagePay = currentPage || 1;
+		
+		const formData = new FormData(myForm);
+		formData.set('currentPage', currentPagePay);
+		formData.set('pageSize', pageSizePay);
+		
+		function callback(data) {
+			
+			$('#listEmpPayment').empty().append(data);
+			
+			const totalcnt = $('#totalcnt').val();
+			var paginationHtml = getPaginationHtml(currentPagePay, totalcnt, pageSizePay, pageBlockSizePay, 'fn_paymentlist');
+			$('#empPaymentPagination').empty().append(paginationHtml);
+		}
+		
+		callAjaxFileUploadSetFormData("/employee/empPaymentList.do", "post", "text", "false", formData, callback);
+	}
+	
+	// 단건 지급처리
+	function selEmpPayment(loginID, event) {
+
+		event.preventDefault();
+		event.stopPropagation();
+
+		var alertmsg = '지급 처리 하시겠습니까?';
+
+		swal({
+			text: alertmsg,
+			icon: "info",
+			buttons: ["취소", '처리'],
+			dangerMode : true,
+		})
+		.then(function(data) {
+			if(data) {
+				var params = {
+					loginID: loginID,
+					sal_date: $('#sal_date').val(),
+				}
+				function callback(data) {
+					if(data.status > 0) {
+					   swal("지급 처리가 완료되었습니다.", {
+						   icon: "success",
+						   buttons: "확인"
+					   });
+					}
+					else {
+					   swal("오류가 발생했습니다.",{
+						   icon: "error",
+						   buttons: "확인"
+					   });
+					}
+					fn_paymentlist(currentPagePay);
+				}
+				callAjax("/employee/addEmpPayment.do", "post", "json", "false", params, callback);
+			}
+		});
+	}
+	
+	// 급여 지급 내역 상세 조회
+	var sloginID;
+	function fn_showPayDetailInfo(loginID) {
+		
+		sloginID = loginID
+		fn_detaillist();
+	}
+	
+	// 급여 지급 내역 상세 조회
+	function fn_detaillist(currentPage) {
+		
+		currentPage = currentPage || 1;
+		
+		var params = {
+			loginID: sloginID,
+			currentPage: currentPage,
+			pageSize: pageSizeDetail
+		}
+		
+		function callback(data) {
+			
+			$('#listEmpDtlPayment').empty().append(data);
+			
+			$('#loginID').val($('#_loginID').val());
+			$('#name').val($('#_name').val());
+			$('#dept_cd').val($('#_department').val());
+			$('#current_poscd').val($('#_rank').val());
+			
+			const totalcnt = $('#dtotalcnt').val();
+			var paginationHtml = getPaginationHtml(currentPage, totalcnt, pageSizeDetail, pageBlockSizeDetail, 'fn_detaillist');
+			$('#empDtlPaymentPagination').empty().append(paginationHtml);
+		}
+		
+		callAjax("/employee/empPaymentDetailList.do", "post", "text", "false", params, callback);
+	}
+	
+	function allEmpPayment() {
+		
+		var alertmsg = '일괄 지급 처리 하시겠습니까?';
+		
+		swal({
+			text: alertmsg,
+			icon: "info",
+			buttons: ["취소", '처리'],
+			dangerMode : true,
+		})
+		.then(function(data) {
+			if(data) {
+				var params = {
+					sal_date: $('#sal_date').val()
+				}
+				
+				console.log(params);
+				
+				function callback(data) {
+					if(data.status > 0) {
+					   swal("일괄 지급 처리가 완료되었습니다.", {
+						   icon: "success",
+						   buttons: "확인"
+					   });
+					}
+					else {
+					   swal("이미 모든 지급이 완료되었습니다.",{
+						   icon: "error",
+						   buttons: "확인"
+					   });
+					}
+					fn_paymentlist();
+				}
+				callAjax("/employee/addAllEmpPayment.do", "post", "json", "false", params, callback);
+			}
+		});
+		
+	}
+</script>
+</head>
+<body>
+<form id="myForm" action=""  method="">
+	<input type="hidden" id="currentPageEmpPayment" value="1">
+	<input type="hidden" id="currentPageEmpDtlPayment" value="1">
+	<input type="hidden" id="tmpPaymentStatus" value="">
+	
+	<!-- 모달 배경 -->
+	<div id="mask"></div>
+
+	<div id="wrap_area">
+
+		<h2 class="hidden">header 영역</h2>
+		<jsp:include page="/WEB-INF/view/common/header.jsp"></jsp:include>
+
+		<h2 class="hidden">컨텐츠 영역</h2>
+		<div id="container">
+			<ul>
+				<li class="lnb">
+					<!-- lnb 영역 --> <jsp:include
+						page="/WEB-INF/view/common/lnbMenu.jsp"></jsp:include> <!--// lnb 영역 -->
+				</li>
+				<li class="contents">
+					<!-- contents -->
+					<h3 class="hidden">contents 영역</h3> <!-- content -->
+					<div class="content">
+					
+						<p class="Location">
+							<a href="../dashboard/dashboard.do" class="btn_set home">메인으로</a> 
+							<span class="btn_nav bold">인사•급여</span>
+							<span class="btn_nav bold">급여관리</span> 
+							<a href="/employee/empPayment.do" class="btn_set refresh">새로고침</a>
+						</p>
+
+						<p class="conTitle">
+							<span>급여 지급 내역 조회</span> <span class="fr"> 
+						</p>
+						<table style="margin-bottom : 10px; border: 1px #e2e6ed; border-style:solid !important;" height = "50px" width="100%" align="left">
+							<tr style="border: 0px; border-color: blue">
+	                           	<td width="6%" height="25" style="font-size: 120%; text-align : center;">부서</td>
+	                           	<td width="7.5%" height="25" style="font-size: 100%; text-align:left;">
+	     	                   		<select id="searchKey_dept" name="searchKey_dept" style="width: 70px;"></select>
+								</td>
+								<td width="6%" height="25" style="font-size: 120%; text-align:center;">직급</td>
+								<td width="8%" height="25" style="font-size: 100%; text-align:left;">
+	     	                    	<select id="searchKey_poscd" name="searchKey_poscd" style="width: 70px;"></select>
+								</td>
+								<td width="9%" height="25" style="font-size: 100%; text-align:left; padding-left: 14px;">
+	     	                      <select id="searchKey" name="searchKey" style="width: 70px;">
+										<option value="loginID" >사번</option>
+										<option value="name" >사원명</option>
+								</select>
+								</td>
+								<td width="26%" height="25">
+	     	                       <input type="text" style="width: 180px; height: 25px;" id="searchWord" name="searchWord">                    
+	                           	</td>
+								<td width="8%" height="25" style="font-size: 120%; text-align:center;">지급상태</td>
+								<td width="9%" height="25" style="font-size: 100%; text-align:left;">
+	     	                    	<select id="payment_state" name="payment_state" style="width: 70px;">
+	     	                    		<option value = "">전체</option>
+										<option value="0" >미지급</option>
+										<option value="1" >지급</option>
+	     	                    	</select>
+								</td>
+	                           	<td>
+	                           		<span class="fr" >
+										<Strong>급여년월&nbsp</Strong><input type="month" id="sal_date" name="sal_date" value="yyyy-mm" max="${maxDate }">
+									</span>
+	                           	</td>
+	                           	<td width = "*" height="25" align="right" style="padding-right : 7px;">
+	                           		<a href="javascript:fn_paymentlist()" class="btnType3 color2" id="btnSearchEmpPayment" name="btn"><span>검  색</span></a>
+	                           	</td>
+	                        </tr>
+                     	</table>
+                     	<span class="fr" style ="margin-bottom : 5px;"> 
+							<a id="lump_sum_Payment" class="btnType3 color2" href="javascript:allEmpPayment()"><span>일괄 지급</span></a>
+						</span>
+						
+						<!-- 급여지급조회 전체사원리스트 -->
+						<div class="divEmpPaymentList">
+							<table class="col">
+								<caption>caption</caption>
+								<colgroup>
+									<col width="7%">
+									<col width="6%">
+									<col width="5%">
+									<col width="6%">
+									<col width="6%">
+									<col width="8%">
+									<col width="7%">
+									<col width="7%">
+									<col width="7%">
+									<col width="6%">
+									<col width="6%">
+									<col width="6%">
+									<col width="6%">
+									<col width="*">
+								</colgroup>
+								<thead>
+									<tr>
+										<th scope="col">지급년월</th>
+										<th scope="col">부서</th>
+										<th scope="col">직급</th>
+										<th scope="col">사번</th>
+										<th scope="col">사원명</th>
+										<th scope="col">연봉</th>
+										<th scope="col">기본급</th>
+										<th scope="col">국민연금</th>
+										<th scope="col">건강보험</th>
+										<th scope="col">산재보험</th>
+										<th scope="col">고용보험</th>
+										<th scope="col">소득세</th>
+										<th scope="col">실급여</th>
+										<th scope="col">지급</th>
+									</tr>
+								</thead>
+								<tbody id="listEmpPayment"></tbody>
+							</table>
+						</div>
+						<div class="paging_area"  id="empPaymentPagination"> </div>
+                     
+						<!-- 급여지급상세조회 -->
+						<p class="conTitle mt50">
+							<span>급여 지급 내역 상세 조회</span>
+						</p>
+	
+						<div class="divEmpDtlPaymentList">
+							<table style="margin-bottom : 10px; border: 1px #e2e6ed; border-style:solid !important;" height = "50px" width="100%" align="left">
+		                         <tr style="border: 0px; border-color: blue">
+		                           	<td width="6%" height="25" style="font-size: 120%; text-align : center;">사번</td>
+		                           	<td width="4%" height="25">
+		     	                   		<input type="text" style="font-size: 110%; width: 120px; height: 25px; text-align:center;" id="loginID" name="loginID" readonly>
+									</td>
+									<td width="8%" height="25" style="font-size: 120%; text-align : center;">사원명</td>
+		                           	<td width="4%" height="25">
+		     	                   		<input type="text" style="font-size: 110%; width: 120px; height: 25px; text-align:center;" id="name" name="name" readonly>
+									</td>
+									<td width="8%" height="25" style="font-size: 120%; text-align : center;">부서명</td>
+		                           	<td width="4%" height="25">
+		     	                   		<input type="text" style="font-size: 110%; width: 120px; height: 25px; text-align:center" id="dept_cd" name="dept_cd" readonly>
+									</td>
+		                           	<td width="*" height="25" style="font-size: 120%; text-align:right; padding-left: 25px;">현재 직급</td>
+									<td width="15%" height="25" style="padding-left : 15px;">
+		     	                       <input type="text" style="font-size: 110%; width: 120px; height: 25px; text-align:center;" id="current_poscd" name="current_poscd" readonly>                    
+		                           	</td>
+		                        </tr>
+	                     	</table>
+							<table class="col">
+								<caption>caption</caption>
+								<colgroup>
+									<col width="7%">
+									<col width="7%">
+									<col width="8%">
+									<col width="7%">
+									<col width="7%">
+									<col width="7%">
+									<col width="7%">
+									<col width="7%">
+									<col width="7%">
+									<col width="8%">
+								</colgroup>
+	
+								<thead>
+									<tr>
+										<th scope="col">지급년월</th>
+										<th scope="col">기준년월</th>
+										<th scope="col">연봉</th>
+										<th scope="col">기본급</th>
+										<th scope="col">국민연금</th>
+										<th scope="col">건강보험</th>
+										<th scope="col">산재보험</th>
+										<th scope="col">고용보험</th>
+										<th scope="col">소득세</th>
+										<th scope="col">실급여</th>
+									</tr>
+								</thead>
+								<tbody id="listEmpDtlPayment">
+									<tr>
+										<td colspan="10">검색 결과가 존재하지 않습니다.</td>
+									</tr> 
+								</tbody>
+							</table>
+						</div>
+						
+						<!-- 페이징에리어 -->
+						<div class="paging_area"  id="empDtlPaymentPagination"> 
+						
+						</div>
+
+					</div> <!--// content -->
+
+					<h3 class="hidden">풋터 영역</h3>
+						<jsp:include page="/WEB-INF/view/common/footer.jsp"></jsp:include>
+				</li>
+			</ul>
+		</div>
+	</div>
+</form>
+</body>
+</html>

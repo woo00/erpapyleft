@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.accounting.dao.DvDao">
+	
+	<!-- 지출결의서 리스트 조회 (신청페이지) : 관리자, 회계총무,영업11 -->
+	
+	<select id="dvList" resultType = "kr.happyjob.study.accounting.model.DvModel">
+		SELECT  dv.dv_code 		<!-- 내역번호 -->,
+		        bac.bacc_name 	<!-- 계정대분류명 -->,
+		        dac.dacc_name	<!-- 상세분류명 -->,
+		        biz.biz_name 	<!-- 거래처명 -->,
+		        dv.dv_date 		<!-- 신청일자 -->,
+		        dv.dv_udate 	<!-- 사용일자 -->,
+		        dv.dv_fee 		<!-- 지출금액 -->,
+		        dv.dv_sign  	<!-- 승인여부 -->,
+		        dv.bacc_code,
+		        dv.dacc_code,
+		        dv.dv_signUser
+		         
+		FROM  tb_dv dv
+		      INNER JOIN tb_userinfo ui ON dv.loginID = ui.loginID
+		      INNER JOIN tb_dacc dac ON dac.dacc_code = dv.dacc_code AND dac.bacc_code = dv.bacc_code
+		      INNER JOIN tb_bacc bac ON bac.bacc_code = dac.bacc_code
+		      INNER JOIN tb_biz biz ON biz.biz_code = dv.biz_code
+		<where>
+			    <if test="(account_cd != null) and (!account_cd.equals(''))">
+			       AND dv.bacc_code = #{account_cd}
+			    </if>
+			    <if test="(detail_account_cd != null) and (!detail_account_cd.equals(''))">
+			       AND dv.dacc_code = #{detail_account_cd}	
+			    </if>
+				<if test="(from_date != null) and (! from_date.equals(''))">
+  					AND DATE_FORMAT(dv.dv_date, '%Y-%m-%d')  <![CDATA[>=]]> STR_TO_DATE(#{from_date}, '%Y-%m-%d')   
+         		</if>
+         		<if test="(to_date != null) and (!to_date.equals(''))">
+         			AND DATE_FORMAT(dv.dv_date, '%Y-%m-%d')  <![CDATA[<=]]> STR_TO_DATE(#{to_date}, '%Y-%m-%d')   
+         		</if> 
+				<if test="(dv_sign != null) and (!dv_sign.equals(''))">
+			       AND dv.dv_sign = #{dv_sign}
+			    </if>
+		</where>       
+       ORDER BY dv.dv_code DESC,  dv.loginID 
+	   LIMIT ${pageindex},${pageSize}	      
+		      
+	</select>
+	
+	<!-- 지출결의 신청 리스트 카운트 -->
+	<select id="dvListcnt" resultType = "int">
+		SELECT  count(*)
+		FROM  tb_dv dv
+		      INNER JOIN tb_userinfo ui ON dv.loginID = ui.loginID
+		      INNER JOIN tb_dacc dac ON dac.dacc_code = dv.dacc_code AND dac.bacc_code = dv.bacc_code
+		      INNER JOIN tb_bacc bac ON bac.bacc_code = dac.bacc_code
+		      INNER JOIN tb_biz biz ON biz.biz_code = dv.biz_code
+		<where>
+			    <if test="(bacc_code != null) and (!bacc_code.equals(''))">
+			       AND dv.bacc_code = #{account_cd}
+			    </if>
+			    <if test="(dacc_code != null) and (!dacc_code.equals(''))">
+			       AND dv.dacc_code = #{detail_account_cd}	
+			    </if>
+				<if test="(from_date != null) and (! from_date.equals(''))">
+  					AND DATE_FORMAT(dv.dv_date, '%Y-%m-%d')  <![CDATA[>=]]> STR_TO_DATE(#{from_date}, '%Y-%m-%d')   
+         		</if>
+         		<if test="(to_date != null) and (!to_date.equals(''))">
+         			AND DATE_FORMAT(dv.dv_date, '%Y-%m-%d')  <![CDATA[<=]]> STR_TO_DATE(#{to_date}, '%Y-%m-%d')   
+         		</if> 
+				<if test="(dv_sign != null) and (!dv_sign.equals(''))">
+			       AND dv.dv_sign = #{dv_sign}
+			    </if>
+		</where>       
+	
+	</select>
+	
+	<!-- 지출결의 신청 단건 조회 -->
+	<select id="dvDetail" resultType="kr.happyjob.study.accounting.model.DvModel">
+		SELECT  dv.dv_code,
+				dv.loginID,
+		        ui.name,	
+		        bac.bacc_name,
+		        dac.dacc_name,
+		        dv.biz_code,
+		        DATE_FORMAT(dv.dv_date,'%Y-%m-%d') AS dv_date,
+		        dv.dv_udate,
+		        dv.dv_fee,
+		        dv.dv_memo,
+		        dv.dv_reres,
+		        dv.dv_sign,
+		        dv.dacc_code,
+		        dv.bacc_code,
+		        dv.file_code,
+		        fl.file_name AS file_name, 
+		       	fl.size AS file_size, 
+		        fl.rel_path AS file_nadd, 
+		        fl.abs_path AS file_madd    
+		        
+		FROM  	tb_dv dv
+				INNER JOIN tb_userinfo ui ON dv.loginID = ui.loginID
+				INNER JOIN tb_dacc dac ON dac.dacc_code = dv.dacc_code AND dac.bacc_code = dv.bacc_code
+				INNER JOIN tb_bacc bac ON bac.bacc_code = dac.bacc_code
+				LEFT OUTER JOIN tb_file fl ON fl.file_code = dv.file_code
+			  
+		WHERE	dv.dv_code = #{dv_code}
+	</select>
+	
+	<!-- 지출결의 신청 등록 -->
+	<insert id="dvSave">
+		<selectKey resultType="int" keyProperty="dv_code" order="BEFORE">
+			SELECT 	IFNULL(MAX(dv_code),0) + 1
+			FROM	tb_dv
+		</selectKey>
+		INSERT INTO tb_dv
+            		(
+						dv_code,
+						loginID,
+						dv_date,
+						dv_udate,
+						bacc_code,
+						dacc_code,
+						dv_fee,
+						dv_sign,
+						dv_memo,
+						biz_code,
+						file_code
+                	)
+		VALUES
+		  		(
+					#{dv_code},
+					#{loginID},
+					DATE_FORMAT(NOW(), '%Y-%m-%d'),
+					#{dv_udate},
+					#{bacc_code},
+					#{dacc_code},
+					#{dv_fee},
+					'3',
+					#{dv_memo},
+					#{biz_code},
+					(select max(file_code) from tb_file)
+				)		
+	</insert>
+	
+	<!-- 지출결의 신청 수정 -->
+	<update id="dvUpdate">
+		UPDATE tb_dv
+		SET loginID = #{loginID},
+			dv_date = DATE_FORMAT(NOW(), '%Y-%m-%d'),
+			dv_udate = #{dv_udate},
+			bacc_code = #{bacc_code},
+			dacc_code = #{dacc_code},
+			dv_fee = #{dv_fee},
+			dv_memo = #{dv_memo},
+			biz_code = #{biz_code}
+		WHERE dv_code = #{dv_code}
+	</update>
+	
+	<!-- 지출결의 신청 삭제 -->
+	<delete id="dvDelete">
+		DELETE FROM tb_dv
+		WHERE dv_code = #{dv_code}
+	</delete>
+	
+	<!-- 지출결의 파일 업로드 -->
+	<insert id="dvFile">
+		<selectKey keyProperty="filecode" resultType="int" order="BEFORE">
+			SELECT	IFNULL(MAX(file_code),0) + 1
+			FROM	tb_file
+		</selectKey>
+		INSERT INTO tb_file
+		(
+			file_code,
+			abs_path,
+			rel_path,
+			file_name,
+			size
+		)
+		VALUES
+		(
+			#{filecode},
+			#{file_madd},
+			#{file_nadd},
+			#{file_name},
+			#{file_size}
+		)
+		
+	</insert>
+	
+	<!-- 지출결의 파일 수정 -->
+	<update id="dvFileUpdate">
+		UPDATE		tb_dv dv
+		INNER JOIN 	tb_file fl ON dv.file_code = fl.file_code
+		
+		SET			fl.abs_path = #{file_madd},
+					fl.rel_path = #{file_nadd},
+					fl.size = #{file_size},
+					fl.file_name = #{file_name}
+					
+		WHERE		fl.file_code = #{file_code}
+	</update>
+	
+<!-- 	지출결의 파일 삭제 -->
+	<delete id="dvFileDelete">
+		DELETE 	FROM tb_file
+		WHERE	file_code = #{file_code}
+	</delete>
+</mapper>
+

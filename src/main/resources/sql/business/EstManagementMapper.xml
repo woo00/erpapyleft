@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+
+<!-- 맵퍼네임 -->
+<mapper namespace="kr.happyjob.study.business.dao.EstManagementDao">
+	
+	<!-- 리스트 조회 -->
+	<select id="listpage" resultType="kr.happyjob.study.business.model.EstManagementModel">
+		 SELECT	
+					tb.sp_code,
+					tb.sp_date,
+					biz.biz_code,
+					biz.biz_name,
+					pb.pb_name,
+					pb.pb_code,
+					ps.ps_name,
+					ps.ps_code,
+					prd.prd_name,
+					prd.prd_code,
+					tb.sp_gcnt,
+					est.est_code,
+		       CASE
+		          WHEN tb.est_code IS NULL THEN '견적서 등록'
+		          ELSE est.loginID
+		       END
+		          loginID
+		       ,
+		       CASE
+		          WHEN tb.est_code IS NULL THEN 'N'
+		          ELSE 'Y'
+		       END
+		          reg_yn
+		FROM tb_salplan tb
+     		INNER JOIN tb_biz biz ON tb.biz_code = biz.biz_code
+     		INNER JOIN tb_pb pb ON tb.pb_code = pb.pb_code
+     		INNER JOIN tb_ps ps ON tb.pb_code = ps.pb_code
+     		INNER JOIN tb_product prd ON tb.prd_code = prd.prd_code
+     		LEFT OUTER JOIN tb_est est ON tb.est_code = est.est_code
+		<where>
+			<!-- 검색 조건 -->
+			<if test="(from_date != null) and (!from_date.equals(''))">
+                and tb.sp_date  <![CDATA[>=]]> #{from_date}
+            </if>               
+            <if test="(to_date!= null) and (!to_date.equals(''))">
+                and tb.sp_date <![CDATA[<=]]> #{to_date}
+            </if>  
+			<if test = "(client_search != null) and (!client_search.equals(''))">
+				AND biz.biz_code = #{client_search}
+			</if>				
+		</where>
+		ORDER BY tb.sp_code DESC
+		LIMIT #{pageIndex},#{pageSize}
+	</select>
+	
+	<select id = "countlistpage" resultType = "int">
+		SELECT COUNT(*) AS tot_cnt
+			FROM tb_salplan tb
+				INNER JOIN tb_biz biz ON tb.biz_code = biz.biz_code
+     			INNER JOIN tb_pb pb ON tb.pb_code = pb.pb_code
+     			INNER JOIN tb_ps ps ON tb.pb_code = ps.pb_code
+     			INNER JOIN tb_product prd ON tb.prd_code = prd.prd_code
+     			LEFT OUTER JOIN tb_est est ON tb.est_code = est.est_code
+        <where>
+			<!-- 검색 조건 -->
+				<if test="(from_date != null) and (!from_date.equals(''))">
+                	and tb.sp_date  <![CDATA[>=]]> #{from_date}
+            	</if>               
+            	<if test="(to_date!= null) and (!to_date.equals(''))">
+                	and tb.sp_date <![CDATA[<=]]> #{to_date}
+            	</if> 
+				<if test = "(client_search != null) and (!client_search.equals(''))">
+					AND biz.biz_code = #{client_search}
+				</if>
+		</where>
+	</select>
+	
+	<!-- 3. 단건조회  -->
+	<select id ="estManagementSelect"  resultType ="kr.happyjob.study.business.model.EstManagementModel" >
+
+	SELECT 
+		
+	tb.biz_number,
+			tb.biz_name,
+       		tb.biz_iname,
+       		tb.biz_addr,
+       		tb.biz_daddr,
+       		tb.biz_phone,
+       		tb2.biz_number biz_number2,
+       		tb2.biz_name biz_name2,
+       		ui.name,
+      		ui.loc_detail,
+       		ui.hp,
+       		te.est_cnt,
+       		te.est_code,
+       		te.sp_code,
+       		te.loginID,
+       		te.est_edate,
+       		tp.sup_price,
+       		tp.prd_name,
+       		floor(tp.sup_price / 10) AS pay,
+       		floor(tp.sup_price + tp.sup_price / 10) AS price
+	FROM tb_est te
+     INNER JOIN tb_biz tb ON tb.biz_code = te.biz_code
+     INNER JOIN tb_userinfo ui ON ui.loginID = te.loginID
+     INNER JOIN tb_product tp ON tp.prd_code = te.prd_code
+     INNER JOIN tb_biz tb2
+    WHERE te.est_code = #{estimate_no} and tb2.biz_code = '999'
+
+	</select>	
+	
+	
+	
+	<insert id="estnewsave">
+	     insert into tb_est
+	                    ( 
+	                       est_code
+	                      ,sp_code
+                          ,prd_code
+                          ,pb_code
+                          ,ps_code
+                          ,loginID
+                          ,biz_code
+                          ,est_cnt
+                          ,est_edate
+                          ,est_odate 
+                          ,est_eo
+                          ,est_yn
+                          ,est_ocnt
+	                    ) values (
+	                      (SELECT IFNULL(MAX(est_code) + 1, 1) FROM tb_est b)
+	                     ,#{sp_code} 
+	                     ,#{divproducttall}
+	                     ,#{scm_big_class}
+	                     ,#{scm_middle_class}
+	                     ,#{loginID}
+	                     ,#{client_search1}
+	                     ,#{estimate_cnt}
+	                     , DATE_FORMAT(now(), '%Y-%m-%d')	                       
+	                     , null  
+	                     , 'E'
+	                     , 'N'
+	                     , null
+	                    )
+	     <selectKey resultType="int" order="AFTER" keyProperty="est_code">
+            select ifnull(max(est_code),0) from tb_est
+         </selectKey>
+	</insert>	
+	<!-- insert시 tb_est est_code랑 tb_salplan est_code 맞춰주기  업데이트 -->
+	<update id="updateestcode">
+		update 
+			tb_salplan set est_code = #{est_code} 
+		where sp_code = #{sp_code}
+	</update>
+	
+	
+	<!-- cnt 갯수 수정  -->
+	<update id="estnewupdate">
+	  update
+	  	tb_est set est_cnt = #{cntree}
+	  where est_code = #{estimate_no}
+	</update>
+	
+	<!-- 삭제 -->
+	<!-- tb_salplan의 est_code를 null로 바꿈 -->
+	<update id="estcodenull">
+		update tb_salplan set est_code = null
+		where sp_code = #{sp_code}
+	</update>
+	
+	<!-- tb_est의 est_code에 해당되는 컬럼 삭제 -->
+	<delete id="estnewdelete">
+		delete from tb_est where est_code = #{estimate_no}
+	</delete>
+	
+	
+	
+</mapper>
