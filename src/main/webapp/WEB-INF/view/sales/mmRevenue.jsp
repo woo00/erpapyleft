@@ -169,7 +169,7 @@ th{
 
 						<!-- 월별매출조회 테이블 -->
 						<div class="divmmRevList">
-							<caption>(단위:십만원)</caption>
+							<caption>(단위: 원)</caption>
 							<table id="mmRevList_main" class="col">
 							</table>
 						</div>

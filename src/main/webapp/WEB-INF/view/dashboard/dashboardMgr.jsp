@@ -69,12 +69,12 @@ click-able rows
 				productCombo("m", "prodall", "all", $("#prolall").val(), $("#promall").val(),  "");  // 제품 목록
 			});
 			
-			//init();
+			init();
 			
 			// 공지사항 조회
-			//fListInf();
+			fListInf();
 			
-			//fListComnGrpCod();
+			fListComnGrpCod();
 			
 			// 버튼 이벤트 등록
 			fRegisterButtonClickEvent();

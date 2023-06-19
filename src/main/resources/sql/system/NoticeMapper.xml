@@ -6,9 +6,9 @@
 	<!-- 공지사항 목록 조회 -->
 	<select id = "noticeList" resultType = "kr.happyjob.study.system.model.NoticeModel">
 		SELECT
-				n.ntc_no as noticeNo
-			,	n.ntc_title as noticeTitle
-			,	DATE_FORMAT(n.ntc_regdate, '%Y-%m-%d') as noticeRegdate
+				n.notice_no as noticeNo
+			,	n.notice_title as noticeTitle
+			,	DATE_FORMAT(n.notice_date, '%Y-%m-%d') as noticeRegdate
 			,	u.loginID as loginId
 			,   u.name as loginName
 		FROM tb_notice n
@@ -16,16 +16,16 @@
 			ON			n.loginID = u.loginID
 		<where>
 			<if test ="(title != null) and (!title.equals(''))">
-			    and n.ntc_title  Like CONCAT('%', #{title}, '%')
+			    and n.notice_title  Like CONCAT('%', #{title}, '%')
 			</if>
 			<if test ="(from_date != null) and (!from_date.equals(''))">
-			    and n.ntc_regdate  <![CDATA[>=]]> STR_TO_DATE(#{from_date}, '%Y-%m-%d')   
+			    and n.notice_date  <![CDATA[>=]]> STR_TO_DATE(#{from_date}, '%Y-%m-%d')   
 			</if>			
 			<if test ="(to_date != null) and (!to_date.equals(''))">
-			    and n.ntc_regdate  <![CDATA[<=]]> STR_TO_DATE(#{to_date}, '%Y-%m-%d')   
+			    and n.notice_date  <![CDATA[<=]]> STR_TO_DATE(#{to_date}, '%Y-%m-%d')   
 			</if>		
 		</where>
-		 ORDER BY n.ntc_no DESC
+		 ORDER BY n.notice_no DESC
 		 LIMIT #{pageIndex}, #{pageSize}
 	</select>
 	
@@ -37,16 +37,16 @@
 		FROM 	tb_notice
 		<where>
 			<if test ="(title != null) and (!title.equals(''))">
-			    and ntc_title  Like CONCAT('%', #{title}, '%')
+			    and notice_title  Like CONCAT('%', #{title}, '%')
 			</if>
 			<if test ="(from_date != null) and (!from_date.equals(''))">
-			    and ntc_regdate  <![CDATA[>=]]> STR_TO_DATE(#{from_date}, '%Y-%m-%d')   
+			    and notice_date  <![CDATA[>=]]> STR_TO_DATE(#{from_date}, '%Y-%m-%d')   
 			</if>			
 			<if test ="(to_date != null) and (!to_date.equals(''))">
-			    and ntc_regdate  <![CDATA[<=]]> STR_TO_DATE(#{to_date}, '%Y-%m-%d')   
+			    and notice_date  <![CDATA[<=]]> STR_TO_DATE(#{to_date}, '%Y-%m-%d')   
 			</if>		
 		</where>
-		ORDER BY ntc_no DESC
+		ORDER BY notice_no DESC
 	</select>	
 		
 	
@@ -56,14 +56,14 @@
 	<select id = "noticeDetail" resultType = "kr.happyjob.study.system.model.NoticeModel">
 		SELECT
 					u.loginID as loginId
-				,	n.ntc_title as noticeTitle
-				,	n.ntc_content as noticeContent
-				,   n.ntc_no as noticeNo
+				,	n.notice_title as noticeTitle
+				,	n.notice_det as noticeContent
+				,   n.notice_no as noticeNo
 				,   u.name as loginName
 		FROM	tb_notice n
 			LEFT JOIN	tb_userinfo u
 			ON			n.loginID = u.loginID
-		WHERE n.ntc_no = #{noticeNo}
+		WHERE n.notice_no = #{noticeNo}
 	</select>
 	
 		
@@ -71,12 +71,12 @@
 	<!-- 공지사항 신규등록(저장) :  -->
 	<insert id = "insertNotice" parameterType="java.util.Map">
 	    <selectKey resultType="string" keyProperty="noticeNo" order="BEFORE">
-            SELECT IFNULL(MAX(ntc_no),0) + 1 FROM tb_notice 
+            SELECT IFNULL(MAX(notice_no),0) + 1 FROM tb_notice 
         </selectKey> 
 		INSERT
 		INTO		tb_notice
 				(
-					ntc_no, loginID, ntc_title, ntc_content, ntc_regdate
+					notice_no, loginID, notice_title, notice_det, notice_date
 				)
 		VALUES
 				(
@@ -91,17 +91,17 @@
 	<!-- 공지사항 수정-->
 	<update id = "updateNotice">
 		UPDATE tb_notice
-		SET		ntc_title = #{noticeTitle}
-				,	ntc_content = #{noticeContent}
-				,	ntc_regdate = NOW()
-		WHERE	ntc_no = #{noticeNo}
+		SET		notice_title = #{noticeTitle}
+				,	notice_det = #{noticeContent}
+				,	notice_date = NOW()
+		WHERE	notice_no = #{noticeNo}
 	</update>
 	
 	<!-- 공지사항 삭제-->
 	<delete id="deleteNotice">
 		DELETE
 		FROM 	tb_notice
-		WHERE 	ntc_no = #{noticeNo}
+		WHERE 	notice_no = #{noticeNo}
 	</delete>
 
 </mapper>

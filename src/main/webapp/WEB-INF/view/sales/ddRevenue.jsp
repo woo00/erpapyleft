@@ -137,8 +137,7 @@
 		}
 		
 
-		callAjax("/sales/listDaySales.do", "post", "text", true, param,
-				resultCallback);
+		callAjax("/sales/listDaySales.do", "post", "text", true, param,resultCallback);
 
 	}
 	

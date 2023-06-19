@@ -10,7 +10,7 @@
 			<tr>
 				<th scope="col" width="8%"></th>
 				<c:forEach items="${listYSalesModel}" var="list">
-					<th scope="col" colspan="2">${list.est_odate}</th>
+					<th scope="col" colspan="">${list.est_odate}</th>
 				</c:forEach>
 			</tr>
 		</thead>
@@ -39,10 +39,10 @@
 				<c:forEach items="${listYSalesModel}" var="list">
 					<c:choose>
 					<c:when test="${list.salesProfit_rate gt 0}">
-						<td colspan="2"><span style="color: blue">▲${list.salesProfit_rate}%</span></td>
+						<td colspan=""><span style="color: blue">▲${list.salesProfit_rate}%</span></td>
 					</c:when>
 					<c:when test="${list.salesProfit_rate le 0}">
-						<td colspan="2"><span style="color: red">▼${-list.salesProfit_rate}%</span></td>
+						<td colspan=""><span style="color: red">▼${-list.salesProfit_rate}%</span></td>
 					</c:when>
 				</c:choose>
 				</c:forEach>

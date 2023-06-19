@@ -1,0 +1,210 @@
+package kr.happyjob.study.business.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.apache.poi.util.SystemOutLogger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import kr.happyjob.study.business.model.BizPartnerModel;
+import kr.happyjob.study.business.service.BizPartnerService;
+
+
+
+
+// 거래처 관리 
+@Controller
+@RequestMapping("/business/")
+public class BizPartnerController {
+	
+	@Autowired
+	private BizPartnerService bizService;
+	
+	
+	
+	// Set logger
+	private final Logger logger = LogManager.getLogger(this.getClass());
+	
+	// Get class name for logger
+	private final String className = this.getClass().toString();
+
+
+
+	/**
+	 * 기본생성자같이 기본으로 있어야하는 아무것도 없는 뷰단  
+	 */
+	@RequestMapping("bizPartner.do")
+	public String bizPartner(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {		
+		logger.info("+ Start " + className + ".bizPartner");
+		logger.info("   - paramMap : " + paramMap);
+		
+		
+		logger.info("+ End " + className + ".bizPartner");
+		
+		return "business/bizPartner";
+	}
+	
+
+	
+
+
+	/**
+	 * model에 List 넣기  == 조회
+	 */
+    @RequestMapping("bizPartnerlist.do")
+    public String bizPartnerList(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+    			HttpServletResponse response, HttpSession session) throws Exception {
+
+		logger.info("+ Start " + className + "bizPartnerlist");
+		logger.info("   - paramMap : " + paramMap);
+		
+		int pageSize = Integer.parseInt((String)paramMap.get("pageSize"));	// 현재 페이지 번호 넘어온것
+		int cpage = Integer.parseInt((String)paramMap.get("cpage"));			// 페이지 사이즈 넘어온것
+		int pageindex = (cpage-1)*pageSize;									// 페이지 시작 row 번호 넘어온것
+	
+		paramMap.put("pageindex", pageindex); // db로
+		paramMap.put("pageSize", pageSize); // db로
+
+		System.out.println("bizPartnerList   컨트롤러로           왔음 ");
+		System.out.println(pageindex);
+		System.out.println(pageSize);
+		// 1 . 목록 리스트 조회 
+		List<BizPartnerModel> bizPartnerlist = bizService.clientList(paramMap);
+		
+		model.addAttribute("bizPartnerlist", bizPartnerlist);
+
+		// 2 . 목록 리스트  카운트 조회
+		int bizPartnerCnt =bizService.clientCnt(paramMap);
+
+				
+		model.addAttribute("bizPartnerCnt",bizPartnerCnt);
+		
+		logger.info("   - paramMap ? ? ? ? ? ? : " + bizPartnerCnt);
+		
+		return "/business/bizPartnerlist"; 
+	}
+	
+
+ 	
+ 	
+ 	
+ 	// 신규거래처 등록 및 기존거래처 수정 
+ 	@RequestMapping("bizPartListSave.do")
+	@ResponseBody
+	public Map<String, Object> saveBizClient(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className + ".bizPartListSave");
+		logger.info("   - paramMap : " + paramMap);
+		
+		String action = (String)paramMap.get("action");
+		
+		String result = "SUCCESS";
+		String resultMsg = "저장 되었습니다.";
+		
+
+	
+		
+		// 실제 뷰단의 자바스크립트 =>  $(#"").(data.실제컬럼이름)에서 뿌리고 가져옴
+		String biz_code = request.getParameter("biz_code");
+		System.out.println(" ===>>>>>  biz_code "+ biz_code);
+				
+	
+		// 사용자 정보 설정
+		paramMap.put("fst_rgst_sst_id", session.getAttribute("loginId"));
+		paramMap.put("fnl_mdfr_sst_id", session.getAttribute("loginId"));
+		paramMap.put("loginId", (String) session.getAttribute("loginId"));
+		
+		//전화 주소 파라미터
+		paramMap.put("biz_hp", (String)paramMap.get("local_tel1") + "-" + (String)paramMap.get("local_tel2") + "-" + (String)paramMap.get("local_tel3"));
+		//거래처 담당자 번호
+		paramMap.put("biz_phone", (String)paramMap.get("biz_phone1") + "-" + (String)paramMap.get("biz_phone2") + "-" + (String)paramMap.get("biz_phone3"));
+		//이메일 주소 파라미터 받은거 합침 
+		paramMap.put("biz_email", (String)paramMap.get("email1") + "@" + (String)paramMap.get("email2"));
+		
+		paramMap.put("biz_number", (String)paramMap.get("biz_number1") + "-" + (String)paramMap.get("biz_number2")+"-"+(String)paramMap.get("biz_number3"));
+		
+		// 사업자 등록 카운트 조회
+		int biznumCnt = bizService.biznumCnt(paramMap);
+		System.out.println(" ===>>>>>  biznumCnt "+ biznumCnt);
+		System.out.println(" ===>>>>>  biz_hp "+ (String)paramMap.get("biz_hp"));
+		System.out.println(" ===>>>>>  biz_phone "+ (String)paramMap.get("biz_phone"));
+		System.out.println(" ===>>>>>  biz_email "+ (String)paramMap.get("biz_email"));
+		System.out.println(" ===>>>>>  biz_number "+ (String)paramMap.get("biz_number"));
+		String biznumMsg;
+		if(biznumCnt >=1){
+			 biznumMsg = "중복 되었습니다.";
+		}else {
+			 biznumMsg = "저장 되었습니다.";
+		}
+		System.out.println(" ===>>>>>  biznumMsg "+ biznumMsg);
+		if ("I".equals(action) && biznumCnt <=0) {
+			//신규 등록 일때
+			bizService.insertClientList(paramMap);		
+		} else if("U".equals(action) && biznumCnt <=0) {
+			//  수정 할 때 
+			bizService.updateClientList(paramMap);	
+			System.out.println("=========paramMap"+paramMap);
+		} else if("D".equals(action)) {
+			bizService.deleteClientList(paramMap);
+		}
+		
+		
+		// resultMap => 뷰로 간다 
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		resultMap.put("result", result);
+		resultMap.put("resultMsg", resultMsg);
+		resultMap.put("biznumMsg", biznumMsg);
+		logger.info("수정 저장 End " + className + ".신규등록 및 수정 ");
+		
+		
+		System.out.println("저장 컨트롤러 ");
+		return resultMap;
+	}
+	
+ 	
+
+ 	
+
+ // 단건 조회 
+  	@RequestMapping("detailone.do")
+  	@ResponseBody
+  	public Map<String, Object> selectClientList(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+  			HttpServletResponse response, HttpSession session) throws Exception{
+  	
+  		String result = "SUCCESS";
+  		String resultMsg = "조회 되었습니다.";
+  		
+  		
+  		BizPartnerModel detailone = bizService.seClientList(paramMap);
+  		
+  		 Map<String, Object> resultMap = new HashMap<String, Object>();
+
+  		resultMap.put("result",result); // 컨트롤러 탔으니 성공했다는 메세지 뷰로 보낸다 
+  		resultMap.put("detailone",detailone); // 단건조회 목록
+  		resultMap.put("resultMsg",resultMsg); // 한국어로 메세지 
+
+  		 
+  		logger.info("+ End " + detailone + "detailone"); // log4j  순서도 중요 
+  		 System.out.printf("resultMap     ", resultMap);
+  		
+  		return resultMap ;
+  		
+  	}
+ 	
+	
+}

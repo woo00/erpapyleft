@@ -44,6 +44,14 @@ public class BmDvController {
 		logger.info("+ End " + className + ".bmDv");
 		return "accounting/bmDv";
 	}
+	@RequestMapping("bmDvVue.do")
+	public String bmDvVue(Model model, @RequestParam Map<String, Object> paramMap) throws Exception {
+		logger.info("+ Start " + className + ".bmDvVue");
+		logger.info("   - paramMap : " + paramMap);
+		
+		logger.info("+ End " + className + ".bmDvVue");
+		return "accounting/bmDvVue";
+	}
 	@RequestMapping("bmDvlist.do")
 	public String bmDvlist(Model model, @RequestParam Map<String, Object> paramMap, 
 			HttpServletRequest request ,HttpServletResponse response, HttpSession session) throws Exception {
@@ -69,6 +77,34 @@ public class BmDvController {
 		logger.info("+ End " + className + ".bmDvlist");
 		return "accounting/bmDvlist";
 	}
+	@RequestMapping("bmDvlistVue.do")
+	@ResponseBody
+	public Map<String, Object> bmDvlistVue(Model model, @RequestParam Map<String, Object> paramMap, 
+			HttpServletRequest request ,HttpServletResponse response, HttpSession session) throws Exception {
+		logger.info("+ Start " + className + ".bmDvlist");
+		logger.info("   - paramMap : " + paramMap);
+		
+		int cpage = Integer.parseInt((String)paramMap.get("cpage"));
+		int pageSize = Integer.parseInt((String)paramMap.get("pageSize"));
+		int pageindex = (cpage-1) * pageSize;
+		
+		paramMap.put("pageSize", pageSize);
+		paramMap.put("pageindex", pageindex);
+		
+		List<BmDvModel> bmDvlist = service.list(paramMap);
+		int totalcnt = service.dvtotalcnt(paramMap);
+		
+		logger.info("totalcnt : " + totalcnt);
+		
+		Map<String, Object> resultMap = new HashMap<String,Object>();
+		resultMap.put("bmDvlist", bmDvlist);
+		resultMap.put("totalcnt", totalcnt);
+		resultMap.put("pageSize", pageSize);
+		resultMap.put("cpage", cpage);
+		
+		logger.info("+ End " + className + ".bmDvlist");
+		return resultMap;
+	}
 	
 	@RequestMapping("detail.do")
 	@ResponseBody
@@ -76,6 +112,8 @@ public class BmDvController {
 			HttpServletRequest request ,HttpServletResponse response, HttpSession session) throws Exception {
 		logger.info("+ Start " + className + ".detail");
 		logger.info("   - paramMap : " + paramMap);
+		
+		BmDvModel detail = service.detail(paramMap);
 		
 		Map<String, Object> resultMap = new HashMap<String, Object>();
 		
@@ -86,7 +124,8 @@ public class BmDvController {
 		
 		
 		resultMap.put("dv_signUser", session.getAttribute("loginId"));
-		resultMap.put("result",service.detail(paramMap));
+		resultMap.put("result","SUCCESS");
+		resultMap.put("detail",detail);
 		
 		logger.info("+ End " + className + ".detail");
 		return resultMap;

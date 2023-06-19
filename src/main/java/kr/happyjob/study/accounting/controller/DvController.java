@@ -1,4 +1,4 @@
-package kr.happyjob.study.accounting.controller;
+ package kr.happyjob.study.accounting.controller;
 
 import java.io.File;
 import java.net.URLEncoder;
@@ -53,6 +53,22 @@ public class DvController {
 
 		return "accounting/DVApply";
 	}	
+	@RequestMapping("empDvVue.do")
+	public String empDvVue(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		String userType = (String) session.getAttribute("userType");
+		String loginID	= (String) session.getAttribute("loginId");
+		
+		paramMap.put("loginID", loginID);
+		
+		String name = dvService.getName(paramMap);
+		
+		model.addAttribute("name",name);
+		model.addAttribute("userType",userType);
+		model.addAttribute("loginID",loginID);
+		
+		return "accounting/DVApplyVue";
+	}	
 	
 	@RequestMapping("Dvlist.do")
 	public String Dvlist(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
@@ -82,13 +98,43 @@ public class DvController {
 		
 		return "accounting/DVApplylist";
 	}
+	@RequestMapping("DvlistVue.do")
+	@ResponseBody
+	public Map<String, Object> DvlistVue(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className + ".listEmpDv");
+		logger.info("   - paramMap : " + paramMap);
+		
+		int pageSize = Integer.parseInt((String) paramMap.get("pageSize"));
+		int cpage = Integer.parseInt((String) paramMap.get("cpage"));
+		int pageindex = (cpage - 1) * pageSize;
+		paramMap.put("pageindex", pageindex);
+		paramMap.put("pageSize", pageSize);
+		
+		String loginID	= (String) session.getAttribute("loginId");
+		model.addAttribute("loginID",loginID);
+		paramMap.put("loginID", loginID);
+		
+		List<DvModel> dvList = dvService.dvList(paramMap);
+		
+		int dvListcnt = dvService.dvListcnt(paramMap);
+		
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		resultMap.put("dvList", dvList);
+		resultMap.put("dvListcnt", dvListcnt);
+		resultMap.put("pageSize", pageSize);
+		resultMap.put("cpage", cpage);
+		
+		return resultMap;
+	}
 	
 	@RequestMapping("dvDetail.do")
 	@ResponseBody
 	public Map<String, Object> dvDetail(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
 			HttpServletResponse response, HttpSession session) throws Exception{
 	
-		logger.info("+ Start " + className + ".detailone");
+		logger.info("+ Start " + className + ".dvDetail");
 		logger.info("   - paramMap : " + paramMap);	
 		
 		DvModel dvDetail = dvService.dvDetail(paramMap);
@@ -98,7 +144,7 @@ public class DvController {
 		resultMap.put("result", "SUCCESS");
 		resultMap.put("dvDetail", dvDetail);
 		
-		logger.info("+ End " + className + ".detailone");
+		logger.info("+ End " + className + ".dvDetail");
 		
 		return resultMap;
 	}
@@ -111,7 +157,7 @@ public class DvController {
 		paramMap.put("loginID", (String)session.getAttribute("loginId"));
 		
 		String action = (String) paramMap.get("action");
-		
+		logger.info("===================paramMap:" + paramMap);
 		if ("I".equals(action)) {
 			dvService.dvFile(paramMap, request);
 			dvService.dvSave(paramMap);

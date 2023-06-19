@@ -1,6 +1,5 @@
 package kr.happyjob.study.dashboard.controller;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import kr.happyjob.study.dashboard.model.DashboardModel;
 import kr.happyjob.study.dashboard.service.DashboardService;
 import kr.happyjob.study.system.model.NoticeModel;
 import kr.happyjob.study.system.service.NoticeService;
