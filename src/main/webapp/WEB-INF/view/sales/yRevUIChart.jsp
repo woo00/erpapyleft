@@ -46,7 +46,7 @@ function drawChart() {
 		var options = {
 				vAxis : {
 					title : '금액(단위:원)',
-					viewWindow: { max: 220000, min:-50000 },
+// 					viewWindow: { max: 220000, min:-500000 },
 					gridlines:{count:5}
 				},
 			chartArea : {
