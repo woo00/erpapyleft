@@ -2,6 +2,7 @@ package kr.happyjob.study.sales.controller;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import kr.happyjob.study.sales.model.SalesModel;
 import kr.happyjob.study.sales.service.YRevService;
@@ -133,9 +135,57 @@ public class YyRevenueController {
 			
 			return "/sales/yRevQuartList";
 		}
-
+	}
+	/**
+	 * 년도별 손익통계 테이블 Vue
+	 */
+	@RequestMapping("listYSalesVue.do")
+	@ResponseBody
+	public Map<String, Object> listYSalesVue(Model model, @RequestParam Map<String, Object> paramMap) throws Exception {
 		
+		logger.info("+ Start " + className + ".listYSales");
+		logger.info("   - paramMap :  " + paramMap);
 		
+		//콤보박스 값
+		combo = (String) paramMap.get("searchKey");
+		
+		/** 사용자 직접 입력 조회(combo:user_input) */
+		if(combo.equals("user_input")) {
+			
+			List<SalesModel> listYSalesUIModel = yRevService.listYSalesUI(paramMap);
+			
+			Map<String, Object> resultMap = new HashMap<String, Object>();
+			resultMap.put("listYSalesUIModel", listYSalesUIModel);
+			
+			logger.info("+ End " + className + ".listYSales");
+			
+			return resultMap;
+			
+		} 
+		
+		/** 상/하반기 조회(combo:half) */
+		else if(combo.equals("half")) {
+			List<SalesModel> listYSalesHalfModel = yRevService.listYSalesHalf(paramMap);
+			
+			Map<String, Object> resultMap = new HashMap<String, Object>();
+			resultMap.put("listYSalesHalfModel", listYSalesHalfModel);
+			
+			logger.info("+ End " + className + ".listYSales");
+			
+			return resultMap;
+			
+		}
+		/** 1-4분기 조회(combo:quarter) */
+		else {
+			List<SalesModel> listYSalesQuartModel = yRevService.listYSalesQuart(paramMap);
+			
+			Map<String, Object> resultMap = new HashMap<String, Object>();
+			resultMap.put("listYSalesQuartModel", listYSalesQuartModel);
+			
+			logger.info("+ End " + className + ".listYSales");
+			
+			return resultMap;
+		}
 	}
 	
 	/**
@@ -180,16 +230,57 @@ public class YyRevenueController {
 			
 			return "/sales/yRevQuartChart";
 		}
-
-		
 		
 	}
-	
-
-	
-
-
-	
-	
+	/**
+	 * 년도별 손익통계 차트 Vue
+	 */
+	@RequestMapping("viewyyChartVue.do")
+	@ResponseBody
+	public Map<String, Object> viewyyChartVue(Model model, @RequestParam Map<String, Object> paramMap) throws Exception {
+		
+		logger.info("+ Start " + className + ".viewYSales");
+		logger.info("   - paramMap :  " + paramMap);
+		
+		/** 사용자 직접 입력 조회(combo:user_input) */
+		if(combo.equals("user_input")) {
+			
+			// 월별매출 목록 조회
+			List<SalesModel> listYSalesUIModel = yRevService.listYSalesUI(paramMap);
+			
+			Map<String, Object> resultMap = new HashMap<String,Object>();
+			resultMap.put("listYSalesUIModel", listYSalesUIModel);
+			
+			logger.info(listYSalesUIModel);
+			
+			logger.info("+ End " + className + ".viewyyChart");
+			
+			return resultMap;
+			
+		} 
+		
+		/** 상/하반기 조회(combo:half) */
+		else if(combo.equals("half")) {
+			List<SalesModel> listYSalesHalfModel = yRevService.listYSalesHalf(paramMap);
+			
+			Map<String, Object> resultMap = new HashMap<String,Object>();
+			resultMap.put("listYSalesHalfModel", listYSalesHalfModel);
+			logger.info("+ End " + className + ".viewyyChart");
+			
+			return resultMap;
+			
+		}
+		/** 1-4분기 조회(combo:quarter) */
+		else {
+			List<SalesModel> listYSalesModel = yRevService.listYSalesQuart(paramMap);
+			
+			Map<String, Object> resultMap = new HashMap<String,Object>();
+			resultMap.put("listYSalesModel", listYSalesModel);
+			logger.info("+ End " + className + ".viewyyChart");
+			
+			return resultMap;
+		}
+		
+	}
 
 }

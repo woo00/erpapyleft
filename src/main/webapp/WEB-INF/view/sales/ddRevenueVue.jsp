@@ -198,7 +198,7 @@ google.charts.setOnLoadCallback(drawChart);
 
 		var param = {
 				searchDate : searchDate,  //검색 날짜
-				oneMonthAgo:oneMonthAgo  //한달전 날짜
+				oneMonthAgo: oneMonthAgo  //한달전 날짜
 		}/**끝*/
 
 		var resultCallback = function(data) {
